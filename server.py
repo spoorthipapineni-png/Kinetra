@@ -422,13 +422,29 @@ class KinetraApiHandler(BaseHTTPRequestHandler):
 
         # JOIN EVENT
         elif '/join' in path:
-            event_id = path.split('/')[3]
+            parts = path.split('/')
+            event_id = parts[3] if len(parts) > 3 else 'evt-1'
             user = self._get_auth_user()
+            if user:
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                cursor.execute('CREATE TABLE IF NOT EXISTS event_participants (event_id TEXT, user_id INTEGER, PRIMARY KEY (event_id, user_id));')
+                cursor.execute('INSERT OR IGNORE INTO event_participants (event_id, user_id) VALUES (?, ?)', (event_id, user['id']))
+                conn.commit()
+                conn.close()
             return self._send_json({"success": True, "message": f"Joined event {event_id}"})
 
         # LEAVE EVENT
         elif '/leave' in path:
-            event_id = path.split('/')[3]
+            parts = path.split('/')
+            event_id = parts[3] if len(parts) > 3 else 'evt-1'
+            user = self._get_auth_user()
+            if user:
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM event_participants WHERE event_id = ? AND user_id = ?', (event_id, user['id']))
+                conn.commit()
+                conn.close()
             return self._send_json({"success": True, "message": f"Left event {event_id}"})
 
         else:
