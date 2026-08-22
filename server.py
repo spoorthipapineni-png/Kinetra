@@ -185,7 +185,15 @@ class KinetraApiHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
 
-        if path == '/api/profile':
+        if path == '/api/health':
+            return self._send_json({
+                "success": True,
+                "service": "KINETRA REST API",
+                "status": "operational",
+                "version": "1.0.0"
+            })
+
+        elif path == '/api/profile':
             user = self._get_auth_user()
             if not user:
                 return self._send_json({"error": "Unauthorized / Invalid token"}, 401)
