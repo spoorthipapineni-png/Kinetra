@@ -1,6 +1,6 @@
 /* ==========================================================================
    KINETRA - MASTER FULL-STACK FRONTEND ENGINE
-   Connected to Node.js / Python Express REST API Backend (http://localhost:5000)
+   Connected to REST API Backend (/api)
    Hackathon Polish Edition
    ========================================================================== */
 
