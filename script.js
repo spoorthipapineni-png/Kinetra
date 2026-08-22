@@ -1,5 +1,7 @@
 /* ==========================================================================
    KINETRA - INTERACTIVE JAVASCRIPT ENGINE
+   Updated with Kinetra AI Assistant, Sports Diet Plan Generator,
+   and Browser Web Notification Reminders
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
       hamburgerBtn.classList.toggle('active');
     });
 
-    // Close menu when clicking links
     document.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', () => {
         navMenu.classList.remove('open');
@@ -33,11 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 2. TOAST NOTIFICATION SYSTEM ---
   const toastEl = document.getElementById('toastNotification');
+  const toastMsgText = document.getElementById('toastMsgText');
   let toastTimer = null;
 
   function showToast(message) {
     if (!toastEl) return;
-    toastEl.textContent = message;
+    if (toastMsgText) toastMsgText.textContent = message;
+    else toastEl.textContent = message;
+    
     toastEl.classList.add('show');
 
     if (toastTimer) clearTimeout(toastTimer);
@@ -74,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!target) return;
 
       let count = 0;
-      const duration = 2000; // ms
+      const duration = 2000;
       const increment = Math.ceil(target / (duration / 16));
 
       const timer = setInterval(() => {
@@ -93,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Trigger counters when scrolled into view
   const statsBar = document.getElementById('statsBar');
   if (statsBar) {
     const observer = new IntersectionObserver((entries) => {
@@ -147,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Phone Mockup Event RSVP Interactive Toggle
   if (phoneRsvpBtn) {
     let rsvpState = false;
     phoneRsvpBtn.addEventListener('click', () => {
@@ -169,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (canvas) {
     const ctx = canvas.getContext('2d');
     
-    // Growth Data (Jan to May)
     const dataPoints = [
       { month: 'Jan', val: 15, label: '15,000 Downloads' },
       { month: 'Feb', val: 32, label: '32,000 Downloads' },
@@ -177,8 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
       { month: 'Apr', val: 82, label: '82,000 Downloads' },
       { month: 'May', val: 105, label: '100,000+ Downloads' }
     ];
-
-    let animProgress = 0;
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -200,10 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const graphWidth = width - paddingLeft - paddingRight;
       const graphHeight = height - paddingTop - paddingBottom;
-
       const maxVal = 120;
 
-      // Calculate Coordinates
       const points = dataPoints.map((dp, i) => {
         const x = paddingLeft + (i / (dataPoints.length - 1)) * graphWidth;
         const currentVal = dp.val * progress;
@@ -211,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return { x, y, month: dp.month, label: dp.label };
       });
 
-      // Draw Grid Lines
+      // Grid Lines
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
@@ -222,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke();
       }
 
-      // Draw Area Fill Gradient
+      // Area Fill
       if (points.length > 0) {
         const areaGradient = ctx.createLinearGradient(0, paddingTop, 0, height - paddingBottom);
         areaGradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
@@ -248,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = areaGradient;
         ctx.fill();
 
-        // Draw Curve Line
+        // Line
         const lineGradient = ctx.createLinearGradient(paddingLeft, 0, width - paddingRight, 0);
         lineGradient.addColorStop(0, '#8B5CF6');
         lineGradient.addColorStop(0.5, '#A855F7');
@@ -271,9 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.lineWidth = 4;
         ctx.stroke();
 
-        // Draw Data Points & Labels
+        // Dots & Labels
         points.forEach(pt => {
-          // Glow Outer Dot
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
           ctx.fillStyle = '#06B6D4';
@@ -282,13 +278,11 @@ document.addEventListener('DOMContentLoaded', () => {
           ctx.fill();
           ctx.shadowBlur = 0;
 
-          // Inner Dot
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
 
-          // Month Label
           ctx.fillStyle = '#94A3B8';
           ctx.font = '600 13px "Plus Jakarta Sans", sans-serif';
           ctx.textAlign = 'center';
@@ -300,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Animate Chart on Scroll
     let graphAnimated = false;
     const graphCard = document.getElementById('events');
 
@@ -342,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalSlides = slides.length;
     let autoSlideInterval = null;
 
-    // Build Dots
     if (sliderDots) {
       sliderDots.innerHTML = '';
       for (let i = 0; i < totalSlides; i++) {
@@ -393,8 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startAutoSlide();
   }
 
-  // --- 8. MODAL CONTROLS ---
-  // Onboarding Modal
+  // --- 8. MODAL CONTROLS & ONBOARDING ---
   const onboardingModal = document.getElementById('onboardingModal');
   const navGetStartedBtn = document.getElementById('navGetStartedBtn');
   const heroGetStartedBtn = document.getElementById('heroGetStartedBtn');
@@ -412,7 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (heroGetStartedBtn) heroGetStartedBtn.addEventListener('click', openOnboarding);
   if (closeOnboardingModal) closeOnboardingModal.addEventListener('click', closeOnboarding);
 
-  // Role Options inside Onboarding
   const roleOptions = document.querySelectorAll('.role-option');
   roleOptions.forEach(opt => {
     opt.addEventListener('click', () => {
@@ -447,13 +437,282 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Close modals when clicking backdrop
   window.addEventListener('click', (e) => {
     if (e.target === onboardingModal) closeOnboarding();
     if (e.target === videoModal) videoModal.classList.remove('open');
+    if (e.target === dietModal) closeDietModal();
   });
 
-  // --- 9. NEWSLETTER FORM SUBMISSION ---
+  // --- 9. KINETRA AI ASSISTANT CHATBOX ENGINE ---
+  const aiFloatingTrigger = document.getElementById('aiFloatingTrigger');
+  const aiChatDrawer = document.getElementById('aiChatDrawer');
+  const closeAiDrawer = document.getElementById('closeAiDrawer');
+  const aiChatMessages = document.getElementById('aiChatMessages');
+  const aiChatForm = document.getElementById('aiChatForm');
+  const aiChatInput = document.getElementById('aiChatInput');
+  const modeGeneralTab = document.getElementById('modeGeneralTab');
+  const modeDietTab = document.getElementById('modeDietTab');
+
+  function openAiChat() {
+    if (aiChatDrawer) aiChatDrawer.classList.add('open');
+  }
+
+  function closeAiChat() {
+    if (aiChatDrawer) aiChatDrawer.classList.remove('open');
+  }
+
+  if (aiFloatingTrigger) aiFloatingTrigger.addEventListener('click', openAiChat);
+  if (closeAiDrawer) closeAiDrawer.addEventListener('click', closeAiChat);
+
+  // Mode Switchers
+  if (modeGeneralTab && modeDietTab) {
+    modeGeneralTab.addEventListener('click', () => {
+      modeGeneralTab.classList.add('active');
+      modeDietTab.classList.remove('active');
+      appendAiBubble("Switched to General AI mode. Ask me anything about sports, matches, teams, or coaching!");
+    });
+
+    modeDietTab.addEventListener('click', () => {
+      modeDietTab.classList.add('active');
+      modeGeneralTab.classList.remove('active');
+      openDietModal();
+    });
+  }
+
+  // Quick Chips
+  const chipBtns = document.querySelectorAll('.chip-btn');
+  chipBtns.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-query');
+      if (q === 'Get My Diet Plan') {
+        openDietModal();
+      } else {
+        handleUserQuery(q);
+      }
+    });
+  });
+
+  if (aiChatForm) {
+    aiChatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = aiChatInput.value.trim();
+      if (!q) return;
+      handleUserQuery(q);
+      aiChatInput.value = '';
+    });
+  }
+
+  function handleUserQuery(userText) {
+    appendUserBubble(userText);
+    openAiChat();
+
+    // Intent-based AI responses
+    setTimeout(() => {
+      const lower = userText.toLowerCase();
+      let response = "";
+
+      if (lower.includes('diet') || lower.includes('food') || lower.includes('meal') || lower.includes('nutrition') || lower.includes('protein')) {
+        response = "🥗 I can generate a customized daily sports diet plan tailored to your sport, goal, and dietary preference! Click 'Get My Diet Plan' below to create yours.";
+        appendAiBubble(response);
+        setTimeout(() => openDietModal(), 1200);
+        return;
+      } else if (lower.includes('match') || lower.includes('pickup') || lower.includes('game')) {
+        response = "⚽ Kinetra Smart Discovery matches you with verified players and pickup games near you. Go to the Discover section or click on the smartphone mockup event to reserve your spot!";
+      } else if (lower.includes('coach') || lower.includes('academy') || lower.includes('train')) {
+        response = "🎓 Kinetra connects athletes directly with top certified coaches across 120+ sports. You can book 1-on-1 coaching or join specialized sports academies.";
+      } else if (lower.includes('team') || lower.includes('recruit') || lower.includes('roster')) {
+        response = "🏆 Team managers can recruit verified players, track skill ratings, and host tournaments effortlessly using Kinetra Team Roster Manager.";
+      } else if (lower.includes('cricket')) {
+        response = "🏏 For Cricket players, Kinetra offers match scheduling, pitch venue bookings, and tailored carb-loading diet plans for all-day stamina.";
+      } else if (lower.includes('football')) {
+        response = "⚽ Football players can discover local 5-a-side or 11-a-side matches, track sprint metrics, and receive hydration & protein recovery meal plans!";
+      } else {
+        response = `⚡ Kinetra is the ultimate sports networking platform uniting 25,000+ athletes across 120+ sports. How else can I assist you with your athletic journey?`;
+      }
+
+      appendAiBubble(response);
+    }, 600);
+  }
+
+  function appendUserBubble(text) {
+    const b = document.createElement('div');
+    b.className = 'chat-bubble user';
+    b.textContent = text;
+    aiChatMessages.appendChild(b);
+    aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+  }
+
+  function appendAiBubble(text) {
+    const b = document.createElement('div');
+    b.className = 'chat-bubble ai';
+    b.textContent = text;
+    aiChatMessages.appendChild(b);
+    aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+  }
+
+  // --- 10. AI SPORTS DIET PLAN GENERATOR & NOTIFICATIONS ---
+  const dietModal = document.getElementById('dietModal');
+  const closeDietModalBtn = document.getElementById('closeDietModal');
+  const navDietBtn = document.getElementById('navDietBtn');
+  const heroDietBtn = document.getElementById('heroDietBtn');
+  const dietForm = document.getElementById('dietForm');
+  const dietResultsContainer = document.getElementById('dietResultsContainer');
+  const mealCardsGrid = document.getElementById('mealCardsGrid');
+  const dietPlanHeadline = document.getElementById('dietPlanHeadline');
+  const notifyPermBtn = document.getElementById('notifyPermBtn');
+  const testNotificationBtn = document.getElementById('testNotificationBtn');
+
+  function openDietModal() {
+    if (dietModal) dietModal.classList.add('open');
+  }
+
+  function closeDietModal() {
+    if (dietModal) dietModal.classList.remove('open');
+  }
+
+  if (navDietBtn) navDietBtn.addEventListener('click', openDietModal);
+  if (heroDietBtn) heroDietBtn.addEventListener('click', openDietModal);
+  if (closeDietModalBtn) closeDietModalBtn.addEventListener('click', closeDietModal);
+
+  // Diet Plan Generation Logic
+  if (dietForm) {
+    dietForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const sport = document.getElementById('dietSport').value;
+      const goal = document.getElementById('dietGoal').value;
+      const age = document.getElementById('dietAge').value;
+      const gender = document.getElementById('dietGender').value;
+      const restriction = document.getElementById('dietRestriction').value;
+
+      generateDietPlan(sport, goal, age, gender, restriction);
+    });
+  }
+
+  function generateDietPlan(sport, goal, age, gender, restriction) {
+    const plans = {
+      "Breakfast": {
+        time: "08:00 AM",
+        title: restriction === "Vegan" ? "Chia & Oat Protein Smoothie Bowl" : (restriction === "Vegetarian" ? "Paneer/Tofu Scramble & Avocado Toast" : "Egg White Omelette & Whole Grain Toast"),
+        desc: `High nutrient breakfast to prime your metabolism for ${sport} training.`,
+        protein: restriction === "Keto" ? "28g Protein" : "32g Protein",
+        carbs: restriction === "Keto" ? "8g Carbs" : "55g Complex Carbs",
+        hydration: "💧 500ml Electrolyte Water"
+      },
+      "Lunch": {
+        time: "01:00 PM",
+        title: restriction === "Vegan" ? "Quinoa & Black Bean Buddha Bowl" : (restriction === "Vegetarian" ? "Lentil Dal, Brown Rice & Grilled Paneer" : "Grilled Chicken Breast with Sweet Potato & Broccoli"),
+        desc: `Sustained macro fuel designed for ${goal.toLowerCase()} and quick muscle recovery.`,
+        protein: "42g High Quality Protein",
+        carbs: restriction === "Keto" ? "12g Carbs" : "65g Complex Carbs",
+        hydration: "💧 750ml Hydration & BCAA"
+      },
+      "Snacks": {
+        time: "05:00 PM",
+        title: restriction === "Keto" ? "Almonds, Walnut & Pumpkin Seeds Mix" : "Greek Yogurt / Plant Protein Shake with Banana & Almonds",
+        desc: `Pre-workout energy booster tailored for high-intensity ${sport} sessions.`,
+        protein: "22g Protein",
+        carbs: "30g Fast Carbs",
+        hydration: "💧 400ml Coconut Water"
+      },
+      "Dinner": {
+        time: "08:30 PM",
+        title: restriction === "Vegan" ? "Tofu & Chickpea Stir-fry with Steamed Veggies" : (restriction === "Vegetarian" ? "Cottage Cheese & Spinach Curry with Millets" : "Baked Salmon / Lean Fish with Asparagus & Quinoa"),
+        desc: "Overnight muscle repair meal rich in essential omega-3s and zinc.",
+        protein: "38g Protein",
+        carbs: restriction === "Keto" ? "10g Carbs" : "40g Slow Carbs",
+        hydration: "💧 500ml Magnesium Hydration"
+      }
+    };
+
+    // Save to LocalStorage
+    const dietData = { sport, goal, age, gender, restriction, plans };
+    localStorage.setItem('kinetra_user_diet', JSON.stringify(dietData));
+
+    // Render Cards
+    if (mealCardsGrid) {
+      mealCardsGrid.innerHTML = '';
+
+      const icons = { Breakfast: "🥣", Lunch: "🥗", Snacks: "🥑", Dinner: "🍲" };
+
+      Object.keys(plans).forEach(mealKey => {
+        const meal = plans[mealKey];
+        const card = document.createElement('div');
+        card.className = 'meal-card';
+        card.innerHTML = `
+          <div class="meal-header">
+            <div class="meal-type-title">
+              <span>${icons[mealKey]}</span> ${mealKey}
+            </div>
+            <span class="meal-time-badge">⏰ ${meal.time}</span>
+          </div>
+          <h4 class="meal-name">${meal.title}</h4>
+          <p class="meal-desc">${meal.desc}</p>
+          <div class="macro-tags">
+            <span class="macro-tag macro-protein">💪 ${meal.protein}</span>
+            <span class="macro-tag macro-carbs">⚡ ${meal.carbs}</span>
+            <span class="macro-tag macro-hydration">${meal.hydration}</span>
+          </div>
+        `;
+        mealCardsGrid.appendChild(card);
+      });
+
+      if (dietPlanHeadline) {
+        dietPlanHeadline.textContent = `Daily Diet Plan for ${sport} (${restriction})`;
+      }
+
+      if (dietResultsContainer) {
+        dietResultsContainer.style.display = 'block';
+      }
+    }
+
+    showToast(`Personalized ${sport} Diet Plan generated!`);
+  }
+
+  // Web Notification Reminders Engine
+  if (notifyPermBtn) {
+    notifyPermBtn.addEventListener('click', () => {
+      if (!("Notification" in window)) {
+        showToast("Web Notifications are not supported in this browser.");
+        return;
+      }
+
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          showToast("🔔 Meal Reminders enabled! You will receive daily meal alerts.");
+          notifyPermBtn.textContent = "✓ Reminders Active";
+          notifyPermBtn.style.borderColor = "#10B981";
+        } else {
+          showToast("Notification permission denied. In-app alerts will be used.");
+        }
+      });
+    });
+  }
+
+  if (testNotificationBtn) {
+    testNotificationBtn.addEventListener('click', () => {
+      const msg = "🥗 Kinetra Diet Alert: Time for Breakfast! Oats & Berry Protein Smoothie at 8:00 AM";
+      
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Kinetra Sports Diet Reminder", {
+          body: msg,
+          icon: "assets/arjun.png"
+        });
+      }
+
+      showToast(msg);
+    });
+  }
+
+  // Check saved diet plan on load
+  const savedDiet = localStorage.getItem('kinetra_user_diet');
+  if (savedDiet) {
+    try {
+      const d = JSON.parse(savedDiet);
+      generateDietPlan(d.sport, d.goal, d.age, d.gender, d.restriction);
+    } catch(e) {}
+  }
+
+  // --- 11. NEWSLETTER FORM SUBMISSION ---
   const newsletterForm = document.getElementById('newsletterForm');
   if (newsletterForm) {
     newsletterForm.addEventListener('submit', (e) => {
