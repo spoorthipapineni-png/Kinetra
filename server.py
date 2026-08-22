@@ -15,8 +15,9 @@ import time
 import os
 import re
 
-PORT = 5000
-DB_FILE = 'database.sqlite'
+HOST = os.environ.get('HOST', '0.0.0.0')
+PORT = int(os.environ.get('PORT', 5000))
+DB_FILE = os.environ.get('DATABASE_URL', 'database.sqlite')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'kinetra_super_secret_jwt_key_2026')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:8000')
 
@@ -384,9 +385,9 @@ class KinetraApiHandler(BaseHTTPRequestHandler):
 
 def run_server():
     init_db()
-    server_address = ('', PORT)
+    server_address = (HOST, PORT)
     httpd = HTTPServer(server_address, KinetraApiHandler)
-    print(f"[KINETRA REST API] Backend Server running on http://localhost:{PORT}")
+    print(f"[KINETRA REST API] Backend Server running on http://{HOST}:{PORT}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

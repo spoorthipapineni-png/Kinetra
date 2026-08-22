@@ -1,0 +1,6 @@
+# Kinetra REST API Backend Dependencies
+# Built with Python standard library (http.server, sqlite3, hashlib, json)
+# No external pip packages required for basic server execution.
+
+# Optional Production WSGI Server (if deploying on PaaS like Render / Heroku):
+# gunicorn>=21.2.0
