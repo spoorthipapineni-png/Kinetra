@@ -1,12 +1,4 @@
-# OS Generated Files
 .DS_Store
 Thumbs.db
-*.tmp
 *.log
-
-# IDE Files
-.vscode/
-.idea/
-
-# Local Environment
-.env
+database.sqlite

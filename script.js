@@ -1,8 +1,11 @@
 /* ==========================================================================
-   KINETRA - MASTER INTERACTIVE JAVASCRIPT SERVICE ARCHITECTURE
+   KINETRA - MASTER FULL-STACK FRONTEND ENGINE
+   Connected to Node.js / Python Express REST API Backend (http://localhost:5000)
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  const API_BASE_URL = 'http://localhost:5000/api';
 
   // ==========================================================================
   // 1. MULTILINGUAL TRANSLATION SYSTEM (PHASE 28)
@@ -64,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 2. CENTRALIZED DATA STORAGE & MOCK DATABASE ENGINE (KinetraDB)
+  // 2. CENTRALIZED DATA STORAGE & BACKEND SERVICE ADAPTER (KinetraDB)
   // ==========================================================================
   const KinetraDB = {
     athletes: [
@@ -121,10 +124,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- AUTH SESSION MANAGEMENT ---
   let currentUser = null;
 
-  function loadAuthSession() {
+  async function loadAuthSession() {
     const token = localStorage.getItem('kinetra_jwt_token');
     const savedUser = localStorage.getItem('kinetra_current_user');
-    if (token && savedUser) {
+
+    if (token) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            currentUser = data.user;
+            localStorage.setItem('kinetra_current_user', JSON.stringify(currentUser));
+            updateNavbarAuthState();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Backend offline, loading cached session');
+      }
+    }
+
+    if (savedUser) {
       try {
         currentUser = JSON.parse(savedUser);
         updateNavbarAuthState();
@@ -250,10 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const gridSize = 10;
     const cellSize = 13;
 
-    // Draw Deterministic QR Matrix based on code string
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
-        // Corner alignment boxes
         if ((r < 3 && c < 3) || (r < 3 && c > 6) || (r > 6 && c < 3)) {
           ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         } else {
@@ -370,30 +391,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     grid.querySelectorAll('.event-join-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-evt-id');
         const targetEvt = KinetraDB.events.find(e => e.id === id);
         if (targetEvt) {
           targetEvt.joined = !targetEvt.joined;
+          const token = localStorage.getItem('kinetra_jwt_token');
+
           if (targetEvt.joined) {
             btn.textContent = '✓ RSVP Confirmed';
             btn.classList.add('btn-accent');
             showToast(`RSVP Confirmed for ${targetEvt.title}!`);
-            if (currentUser) {
-              currentUser.matchesCount = (currentUser.matchesCount || 12) + 1;
-              KinetraDB.updateUser(currentUser);
+
+            if (token) {
+              try {
+                await fetch(`${API_BASE_URL}/events/${id}/join`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+              } catch (e) {}
             }
           } else {
             btn.textContent = 'Join Event Now';
             btn.classList.remove('btn-accent');
             showToast(`RSVP Cancelled for ${targetEvt.title}`);
+
+            if (token) {
+              try {
+                await fetch(`${API_BASE_URL}/events/${id}/leave`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+              } catch (e) {}
+            }
           }
         }
       });
     });
   }
 
-  // AI Matchmaking View (Phase 10)
   function renderMatchmakingView() {
     const grid = document.getElementById('matchmakingResultsGrid');
     if (!grid) return;
@@ -433,7 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Scout Discovery View (Phase 17)
   function renderScoutView() {
     const grid = document.getElementById('scoutAthletesGrid');
     if (!grid) return;
@@ -483,7 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Profile View Renderer (Phase 7, 8, 9)
   function renderProfileView() {
     if (!currentUser) {
       showToast('Please log in or sign up to view your profile.');
@@ -510,8 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nameEl) nameEl.textContent = currentUser.name;
     if (idNameEl) idNameEl.textContent = currentUser.name;
     if (roleEl) roleEl.textContent = `⚡ ${currentUser.role || 'Pro Athlete'}`;
-    if (sportEl) sportEl.textContent = `Primary Sport: ${currentUser.primarySport || 'Football'}`;
-    if (idSportEl) idSportEl.textContent = `${currentUser.primarySport || 'Football'} • ${currentUser.skillLevel || 'Advanced'}`;
+    if (sportEl) sportEl.textContent = `Primary Sport: ${currentUser.primarySport || currentUser.sport || 'Football'}`;
+    if (idSportEl) idSportEl.textContent = `${currentUser.primarySport || currentUser.sport || 'Football'} • ${currentUser.skillLevel || 'Advanced'}`;
     if (skillEl) skillEl.textContent = `Skill Level: ${currentUser.skillLevel || 'Advanced'}`;
     if (ageEl) ageEl.textContent = `Age: ${currentUser.age || 24} (${currentUser.gender || 'Male'})`;
     if (emailEl) emailEl.textContent = currentUser.email;
@@ -520,11 +554,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (idCodeEl) idCodeEl.textContent = sportsIdCode;
     if (scoreValEl) scoreValEl.innerHTML = `${currentUser.kinetraScore || 742} <span style="font-size: 1.5rem; color: var(--text-muted);">/ 1000</span>`;
 
-    // Render Canvas QR Code
     renderSportsIdQrCode(sportsIdCode);
   }
 
-  // --- BUTTON ACTIONS IN PROFILE ---
+  // --- PROFILE BUTTONS ---
   const btnShareSportsId = document.getElementById('btnShareSportsId');
   const btnOpenTrainingCoach = document.getElementById('btnOpenTrainingCoach');
   const btnOpenTeamBuilder = document.getElementById('btnOpenTeamBuilder');
@@ -537,7 +570,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Training Coach Modal (Phase 12)
   const trainingCoachModal = document.getElementById('trainingCoachModal');
   const closeTrainingCoachModal = document.getElementById('closeTrainingCoachModal');
 
@@ -548,7 +580,6 @@ document.addEventListener('DOMContentLoaded', () => {
     closeTrainingCoachModal.addEventListener('click', () => trainingCoachModal.classList.remove('open'));
   }
 
-  // Drill Checkbox Handler
   const drillCheckboxes = document.querySelectorAll('.drill-checkbox');
   drillCheckboxes.forEach(chk => {
     chk.addEventListener('change', () => {
@@ -570,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Smart Team Builder Modal (Phase 14)
   const teamBuilderModal = document.getElementById('teamBuilderModal');
   const closeTeamBuilderModal = document.getElementById('closeTeamBuilderModal');
   const btnRegenerateTeams = document.getElementById('btnRegenerateTeams');
@@ -594,7 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Profile Actions Bar
   const btnProfileCheckStatus = document.getElementById('btnProfileCheckStatus');
   const btnProfileAddGame = document.getElementById('btnProfileAddGame');
   const btnProfileAddFriends = document.getElementById('btnProfileAddFriends');
@@ -614,14 +643,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const addGameForm = document.getElementById('addGameForm');
   if (addGameForm) {
-    addGameForm.addEventListener('submit', (e) => {
+    addGameForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const newSport = document.getElementById('newSportSelect').value;
+      const token = localStorage.getItem('kinetra_jwt_token');
+
+      if (token) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/profile/games`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ sport: newSport })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`REST API: Added ${newSport} to SQLite Database!`);
+          }
+        } catch (err) {
+          console.warn('API error, saving locally');
+        }
+      }
+
       if (currentUser) {
-        currentUser.primarySport = `${currentUser.primarySport}, ${newSport}`;
+        currentUser.primarySport = `${currentUser.primarySport || currentUser.sport || 'Football'}, ${newSport}`;
         KinetraDB.updateUser(currentUser);
         renderProfileView();
-        showToast(`Added ${newSport} to your profile!`);
       }
       if (addGameModal) addGameModal.classList.remove('open');
     });
@@ -686,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnProfileLogout) btnProfileLogout.addEventListener('click', logout);
 
   // ==========================================================================
-  // 6. AUTHENTICATION CONTROLLER (SIGNUP & LOGIN MODALS)
+  // 6. AUTHENTICATION CONTROLLER (SIGNUP & LOGIN MODALS VIA REST API)
   // ==========================================================================
   const onboardingModal = document.getElementById('onboardingModal');
   const loginModal = document.getElementById('loginModal');
@@ -703,8 +749,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeOnboardingModal) closeOnboardingModal.addEventListener('click', closeSignupModal);
   if (closeLoginModal) closeLoginModal.addEventListener('click', closeLoginModal);
 
+  // REST API SIGNUP
   if (onboardingForm) {
-    onboardingForm.addEventListener('submit', (e) => {
+    onboardingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('signupName').value.trim();
       const email = document.getElementById('signupEmail').value.trim();
@@ -714,64 +761,70 @@ document.addEventListener('DOMContentLoaded', () => {
       const age = document.getElementById('signupAge').value;
       const gender = document.getElementById('signupGender').value;
 
-      let role = 'Athlete';
-      const activeRoleBtn = onboardingForm.querySelector('.role-option.active');
-      if (activeRoleBtn) role = activeRoleBtn.getAttribute('data-role');
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, sport, skillLevel: skill, age: parseInt(age, 10), gender })
+        });
 
-      if (KinetraDB.getUserByEmail(email)) {
-        showToast('An account with this email already exists. Please log in.');
+        const data = await response.json();
+        if (!response.ok || data.error) {
+          showToast(data.error || 'Signup failed. Please try again.');
+          return;
+        }
+
+        saveAuthSession(data.user, data.token);
         closeSignupModal();
-        openLoginModal();
-        return;
+        showToast(`Welcome to Kinetra, ${data.user.name}! Your Digital Sports ID is ready.`);
+        navigateTo('profile');
+      } catch (err) {
+        console.warn('Backend API connection failed, using local auth');
+        const token = 'KT-JWT-TOKEN-' + Math.random().toString(36).substr(2);
+        const newUser = { id: 'usr_' + Date.now(), name, email, password, primarySport: sport, skillLevel: skill, age, gender, sportsIdCode: 'KT-IND-' + Math.floor(100000 + Math.random() * 900000) };
+        saveAuthSession(newUser, token);
+        closeSignupModal();
+        navigateTo('profile');
       }
-
-      const token = 'KT-JWT-TOKEN-' + Math.random().toString(36).substr(2);
-      const sportsIdCode = 'KT-IND-' + Math.floor(100000 + Math.random() * 900000);
-
-      const newUser = {
-        id: 'usr_' + Date.now(),
-        name,
-        email,
-        password,
-        role,
-        primarySport: sport,
-        skillLevel: skill,
-        age: parseInt(age, 10),
-        gender,
-        friendsCount: 1,
-        matchesCount: 2,
-        kinetraScore: 742,
-        sportsIdCode,
-        avatar: 'assets/arjun.png'
-      };
-
-      KinetraDB.saveUser(newUser);
-      saveAuthSession(newUser, token);
-
-      closeSignupModal();
-      showToast(`Welcome to Kinetra, ${name}! Your Digital Sports ID is ready.`);
-      navigateTo('profile');
     });
   }
 
+  // REST API LOGIN
   if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
 
-      const user = KinetraDB.getUserByEmail(email);
-      if (!user || user.password !== password) {
-        showToast('Invalid email or password. Please try again.');
-        return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        if (!response.ok || data.error) {
+          showToast(data.error || 'Invalid email or password.');
+          return;
+        }
+
+        saveAuthSession(data.user, data.token);
+        closeLoginModal();
+        showToast(`Welcome back, ${data.user.name}!`);
+        navigateTo('profile');
+      } catch (err) {
+        console.warn('Backend API connection failed, using local auth');
+        const user = KinetraDB.getUserByEmail(email);
+        if (!user || user.password !== password) {
+          showToast('Invalid email or password.');
+          return;
+        }
+        const token = 'KT-JWT-TOKEN-' + Math.random().toString(36).substr(2);
+        saveAuthSession(user, token);
+        closeLoginModal();
+        navigateTo('profile');
       }
-
-      const token = 'KT-JWT-TOKEN-' + Math.random().toString(36).substr(2);
-      saveAuthSession(user, token);
-
-      closeLoginModal();
-      showToast(`Welcome back, ${user.name}!`);
-      navigateTo('profile');
     });
   }
 
