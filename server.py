@@ -17,7 +17,8 @@ import re
 
 PORT = 5000
 DB_FILE = 'database.sqlite'
-JWT_SECRET = 'kinetra_super_secret_jwt_key_2026'
+JWT_SECRET = os.environ.get('JWT_SECRET', 'kinetra_super_secret_jwt_key_2026')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:8000')
 
 # --- DATABASE INITIALIZATION ---
 def init_db():
@@ -89,18 +90,16 @@ def init_db():
         )
     ''')
 
-    # Insert default events if empty
-    cursor.execute('SELECT COUNT(*) FROM events')
-    if cursor.fetchone()[0] == 0:
-        cursor.executemany('''
-            INSERT INTO events (id, title, sport, date, location, players)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', [
-            ('evt-1', 'City Football Cup', 'Football', 'Sun 21 May, 5:00 PM', 'Central Park, New York', '18/22 Attending'),
-            ('evt-2', 'Brooklyn Tennis Open', 'Tennis', 'Sat 27 May, 10:00 AM', 'Brooklyn Courts, NY', '12/16 Attending'),
-            ('evt-3', 'Manhattan Hoops League', 'Basketball', 'Wed 31 May, 6:30 PM', 'Downtown Gym, NY', '8/10 Attending'),
-            ('evt-4', 'Metropolitan Badminton Championship', 'Badminton', 'Sun 4 Jun, 9:00 AM', 'Metro Sports Arena', '24/32 Attending')
-        ])
+    # Insert/update default demo user
+    pwd_hash = hash_password('password123')
+    cursor.execute('SELECT id FROM users WHERE email = ?', ('demo@kinetra.com',))
+    if not cursor.fetchone():
+        cursor.execute('''
+            INSERT INTO users (name, email, password_hash, sport, skill_level, age, gender, role, sports_id_code, kinetra_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', ('Judge Demo Athlete', 'demo@kinetra.com', pwd_hash, 'Football', 'Advanced Pro', 24, 'Male', 'Pro Athlete', 'KT-IND-999999', 850))
+    else:
+        cursor.execute('UPDATE users SET password_hash = ? WHERE email = ?', (pwd_hash, 'demo@kinetra.com'))
 
     conn.commit()
     conn.close()
@@ -133,7 +132,13 @@ def verify_jwt(token):
 class KinetraApiHandler(BaseHTTPRequestHandler):
 
     def _set_cors_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
+        client_origin = self.headers.get('Origin')
+        allowed_origin = FRONTEND_URL
+        if client_origin:
+            if FRONTEND_URL == '*' or client_origin == FRONTEND_URL or 'localhost' in client_origin or '127.0.0.1' in client_origin:
+                allowed_origin = client_origin
+
+        self.send_header('Access-Control-Allow-Origin', allowed_origin)
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
@@ -306,10 +311,10 @@ class KinetraApiHandler(BaseHTTPRequestHandler):
                 "id": row[0],
                 "name": row[1],
                 "email": row[2],
-                "sport": row[3],
-                "skillLevel": row[4],
-                "age": row[5],
-                "gender": row[6],
+                "sport": row[4],
+                "skillLevel": row[5],
+                "age": row[6],
+                "gender": row[7],
                 "sportsIdCode": row[8],
                 "kinetraScore": row[9]
             }
