@@ -269,6 +269,49 @@ class KinetraApiHandler(BaseHTTPRequestHandler):
                     return self._send_json({"error": "Unauthorized"}, 401)
                 return self._send_json({"success": True, "connections": []})
 
+            elif path in ['/api/discover', '/api/search', '/api/filters']:
+                return self._send_json({
+                    "success": True,
+                    "categories": [
+                        {"name": "Football ⚽", "count": "4,200+ Players", "venues": "120 Courts Open"},
+                        {"name": "Cricket 🏏", "count": "5,800+ Players", "venues": "85 Pitches Open"}
+                    ]
+                })
+
+            elif path == '/api/matchmaking':
+                return self._send_json({
+                    "success": True,
+                    "matches": [
+                        {"name": "Arjun R.", "sport": "Cricket", "matchScore": 98, "skill": "Advanced Pro"},
+                        {"name": "Sneha P.", "sport": "Badminton", "matchScore": 95, "skill": "Intermediate"}
+                    ]
+                })
+
+            elif path in ['/api/performance', '/api/score']:
+                user = self._get_auth_user()
+                score_val = user['kinetraScore'] if user else 742
+                return self._send_json({"success": True, "kinetraScore": score_val, "maxScore": 1000})
+
+            elif path == '/api/achievements':
+                return self._send_json({
+                    "success": True,
+                    "achievements": [
+                        {"title": "City League MVP", "desc": "Top scorer in Football Cup"},
+                        {"title": "10 Matches Streak", "desc": "Completed 10 consecutive matches"}
+                    ]
+                })
+
+            elif path == '/api/notifications':
+                return self._send_json({"success": True, "unreadCount": 3, "notifications": ["3 new match connection requests!"]})
+
+            elif path == '/api/sports-id':
+                user = self._get_auth_user()
+                code = user['sportsIdCode'] if user else 'KT-IND-849201'
+                return self._send_json({"success": True, "sportsIdCode": code})
+
+            elif path == '/api/logout':
+                return self._send_json({"success": True, "message": "Logged out successfully"})
+
             else:
                 self._send_json({"error": "Endpoint not found"}, 404)
         else:
