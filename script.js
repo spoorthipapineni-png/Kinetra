@@ -1,38 +1,622 @@
 /* ==========================================================================
    KINETRA - INTERACTIVE JAVASCRIPT ENGINE
-   Updated with Kinetra AI Assistant, Sports Diet Plan Generator,
-   and Browser Web Notification Reminders
+   Featuring Centralized KinetraDB Engine, JWT Auth, SPA Router,
+   Profile Dashboard & Profile Action Buttons (Check Status, Add Game, Add Friends, Logout)
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // --- 1. STICKY NAVBAR & MOBILE MENU TOGGLE ---
-  const navbar = document.getElementById('navbar');
-  const hamburgerBtn = document.getElementById('hamburgerBtn');
-  const navMenu = document.getElementById('navMenu');
+  // ==========================================================================
+  // 1. CENTRALIZED DATA STORAGE & MOCK DATABASE ENGINE (KinetraDB)
+  // ==========================================================================
+  const KinetraDB = {
+    // Initial Pre-populated Athletes
+    athletes: [
+      { id: 'ath-1', name: 'Arjun R.', sport: 'Cricket', role: 'Captain', city: 'Mumbai', matchScore: 98, skill: 'Advanced', avatar: 'assets/arjun.png', connected: false },
+      { id: 'ath-2', name: 'Sneha P.', sport: 'Badminton', role: 'Enthusiast', city: 'Bangalore', matchScore: 95, skill: 'Intermediate', avatar: 'assets/sneha.png', connected: false },
+      { id: 'ath-3', name: 'Rohit M.', sport: 'Football', role: 'Coach', city: 'Delhi', matchScore: 92, skill: 'Pro', avatar: 'assets/rohit.png', connected: false },
+      { id: 'ath-4', name: 'Maya S.', sport: 'Basketball', role: 'Point Guard', city: 'New York', matchScore: 89, skill: 'Advanced', avatar: 'assets/arjun.png', connected: false },
+      { id: 'ath-5', name: 'Alex K.', sport: 'Tennis', role: 'Player', city: 'London', matchScore: 87, skill: 'Intermediate', avatar: 'assets/sneha.png', connected: false },
+      { id: 'ath-6', name: 'David L.', sport: 'Swimming', role: 'Freestyler', city: 'Sydney', matchScore: 85, skill: 'Pro', avatar: 'assets/rohit.png', connected: false }
+    ],
 
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 40) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
+    // Initial Pre-populated Events
+    events: [
+      { id: 'evt-1', title: 'City Football Cup', sport: 'Football', date: 'Sun 21 May, 5:00 PM', location: 'Central Park, New York', players: '18/22 Attending', joined: false },
+      { id: 'evt-2', title: 'Brooklyn Tennis Open', sport: 'Tennis', date: 'Sat 27 May, 10:00 AM', location: 'Brooklyn Courts, NY', players: '12/16 Attending', joined: false },
+      { id: 'evt-3', title: 'Manhattan Hoops League', sport: 'Basketball', date: 'Wed 31 May, 6:30 PM', location: 'Downtown Gym, NY', players: '8/10 Attending', joined: false },
+      { id: 'evt-4', title: 'Metropolitan Badminton Championship', sport: 'Badminton', date: 'Sun 4 Jun, 9:00 AM', location: 'Metro Sports Arena', players: '24/32 Attending', joined: false }
+    ],
+
+    // Sports Categories
+    sportsCategories: [
+      { name: 'Football ⚽', count: '4,200+ Players', venues: '120 Courts Open', desc: 'Pickup matches & 11-a-side leagues daily.' },
+      { name: 'Cricket 🏏', count: '5,800+ Players', venues: '85 Pitches Open', desc: 'T20 tournaments & weekend net practice.' },
+      { name: 'Basketball 🏀', count: '3,100+ Players', venues: '95 Gyms Open', desc: 'Half-court pickup & 5v5 leagues.' },
+      { name: 'Badminton 🏸', count: '2,900+ Players', venues: '110 Indoor Courts', desc: 'Singles & doubles match ladders.' },
+      { name: 'Tennis 🎾', count: '1,800+ Players', venues: '64 Clay/Hard Courts', desc: 'Ranked match play & coaching sessions.' },
+      { name: 'Swimming 🏊', count: '1,500+ Swimmers', venues: '40 Pools Open', desc: 'Freestyle sprint trials & lap swimming.' }
+    ],
+
+    getUsers() {
+      const u = localStorage.getItem('kinetra_users_db');
+      return u ? JSON.parse(u) : [];
+    },
+
+    saveUser(userObj) {
+      const users = this.getUsers();
+      users.push(userObj);
+      localStorage.setItem('kinetra_users_db', JSON.stringify(users));
+    },
+
+    getUserByEmail(email) {
+      const users = this.getUsers();
+      return users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    },
+
+    updateUser(userObj) {
+      const users = this.getUsers();
+      const idx = users.findIndex(u => u.email.toLowerCase() === userObj.email.toLowerCase());
+      if (idx !== -1) {
+        users[idx] = userObj;
+        localStorage.setItem('kinetra_users_db', JSON.stringify(users));
+      }
     }
-  });
+  };
 
-  if (hamburgerBtn && navMenu) {
-    hamburgerBtn.addEventListener('click', () => {
-      navMenu.classList.toggle('open');
-      hamburgerBtn.classList.toggle('active');
+  // --- CURRENT AUTH SESSION ENGINE ---
+  let currentUser = null;
+
+  function loadAuthSession() {
+    const token = localStorage.getItem('kinetra_jwt_token');
+    const savedUser = localStorage.getItem('kinetra_current_user');
+    if (token && savedUser) {
+      try {
+        currentUser = JSON.parse(savedUser);
+        updateNavbarAuthState();
+      } catch (e) {
+        logout();
+      }
+    }
+  }
+
+  function saveAuthSession(userObj, token) {
+    currentUser = userObj;
+    localStorage.setItem('kinetra_jwt_token', token);
+    localStorage.setItem('kinetra_current_user', JSON.stringify(userObj));
+    updateNavbarAuthState();
+  }
+
+  function logout() {
+    currentUser = null;
+    localStorage.removeItem('kinetra_jwt_token');
+    localStorage.removeItem('kinetra_current_user');
+    updateNavbarAuthState();
+    showToast('Logged out successfully.');
+    navigateTo('home');
+  }
+
+  function updateNavbarAuthState() {
+    const authContainer = document.getElementById('navAuthContainer');
+    if (!authContainer) return;
+
+    if (currentUser) {
+      authContainer.innerHTML = `
+        <div class="user-auth-pill" id="navProfilePill">
+          <img src="${currentUser.avatar || 'assets/arjun.png'}" class="user-avatar-sm" alt="User">
+          <span class="user-name-sm">${currentUser.name.split(' ')[0]}</span>
+        </div>
+      `;
+
+      const pill = document.getElementById('navProfilePill');
+      if (pill) {
+        pill.addEventListener('click', () => navigateTo('profile'));
+      }
+    } else {
+      authContainer.innerHTML = `
+        <button class="btn btn-secondary" id="navLoginBtn">Log In</button>
+        <button class="btn btn-primary" id="navGetStartedBtn">Get Started</button>
+      `;
+
+      const loginBtn = document.getElementById('navLoginBtn');
+      const signupBtn = document.getElementById('navGetStartedBtn');
+
+      if (loginBtn) loginBtn.addEventListener('click', openLoginModal);
+      if (signupBtn) signupBtn.addEventListener('click', openSignupModal);
+    }
+  }
+
+  // ==========================================================================
+  // 2. SINGLE PAGE APPLICATION (SPA) VIEW ROUTER
+  // ==========================================================================
+  const viewPages = document.querySelectorAll('.view-page');
+  const navRouterLinks = document.querySelectorAll('.nav-router-link');
+
+  function navigateTo(viewName) {
+    if (viewName === 'why-kinetra' || viewName === 'reviews') {
+      // Show home view first then scroll to section
+      switchView('homeView');
+      const sectionId = viewName === 'why-kinetra' ? 'whyKinetraSection' : 'reviewsSection';
+      const sec = document.getElementById(sectionId);
+      if (sec) {
+        setTimeout(() => {
+          sec.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+      return;
+    }
+
+    const targetViewId = viewName + 'View';
+    const targetView = document.getElementById(targetViewId);
+
+    if (targetView) {
+      switchView(targetViewId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Render Dynamic Views
+      if (viewName === 'discover') renderDiscoverView();
+      if (viewName === 'connect') renderConnectView();
+      if (viewName === 'events') renderEventsView();
+      if (viewName === 'profile') renderProfileView();
+    }
+  }
+
+  function switchView(viewId) {
+    viewPages.forEach(page => {
+      if (page.id === viewId) {
+        page.classList.add('active');
+      } else {
+        page.classList.remove('active');
+      }
     });
 
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', () => {
-        navMenu.classList.remove('open');
+    // Update nav active states
+    const activeRouteName = viewId.replace('View', '');
+    navRouterLinks.forEach(link => {
+      const target = link.getAttribute('data-view');
+      if (target === activeRouteName) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  }
+
+  // Bind Router Link Clicks
+  navRouterLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetView = link.getAttribute('data-view');
+      if (targetView) {
+        navigateTo(targetView);
+      }
+    });
+  });
+
+  // ==========================================================================
+  // 3. DYNAMIC VIEWS RENDERERS
+  // ==========================================================================
+
+  // Discover View Renderer
+  function renderDiscoverView() {
+    const grid = document.getElementById('discoverGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    KinetraDB.sportsCategories.forEach(cat => {
+      const card = document.createElement('div');
+      card.className = 'persona-card';
+      card.innerHTML = `
+        <div>
+          <h3 class="persona-title">${cat.name}</h3>
+          <p class="persona-desc">${cat.desc}</p>
+        </div>
+        <div style="margin-top: 16px;">
+          <div style="font-size: 0.85rem; color: var(--primary-cyan-light); font-weight: 700; margin-bottom: 4px;">${cat.count}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">${cat.venues}</div>
+          <button class="btn btn-secondary" style="margin-top: 14px; width: 100%; font-size: 0.82rem;" onclick="showToast('Showing ${cat.name} courts near you')">Explore Venues</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Connect View Renderer
+  function renderConnectView() {
+    const grid = document.getElementById('connectAthletesGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    KinetraDB.athletes.forEach(ath => {
+      const card = document.createElement('div');
+      card.className = 'connect-athlete-card';
+      card.innerHTML = `
+        <div class="athlete-card-header">
+          <img src="${ath.avatar}" alt="${ath.name}" class="athlete-card-avatar">
+          <div>
+            <h4 style="font-size: 1.1rem; font-weight: 800; color: #FFF;">${ath.name}</h4>
+            <div style="font-size: 0.82rem; color: var(--text-muted);">${ath.sport} • ${ath.city}</div>
+          </div>
+          <span class="match-percentage-badge">${ath.matchScore}% Match</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Skill Rating: <strong style="color: var(--primary-cyan);">${ath.skill}</strong> • Role: <strong>${ath.role}</strong>
+        </div>
+        <button class="connect-btn ${ath.connected ? 'connected' : ''}" data-ath-id="${ath.id}">
+          ${ath.connected ? '✓ Connected Friend' : '+ Connect Athlete'}
+        </button>
+      `;
+      grid.appendChild(card);
+    });
+
+    // Bind connect buttons
+    grid.querySelectorAll('.connect-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-ath-id');
+        const targetAth = KinetraDB.athletes.find(a => a.id === id);
+        if (targetAth) {
+          targetAth.connected = !targetAth.connected;
+          if (targetAth.connected) {
+            btn.textContent = '✓ Connected Friend';
+            btn.classList.add('connected');
+            showToast(`Connected with ${targetAth.name}!`);
+            if (currentUser) {
+              currentUser.friendsCount = (currentUser.friendsCount || 48) + 1;
+              KinetraDB.updateUser(currentUser);
+            }
+          } else {
+            btn.textContent = '+ Connect Athlete';
+            btn.classList.remove('connected');
+            showToast(`Disconnected from ${targetAth.name}`);
+            if (currentUser) {
+              currentUser.friendsCount = Math.max(0, (currentUser.friendsCount || 48) - 1);
+              KinetraDB.updateUser(currentUser);
+            }
+          }
+        }
       });
     });
   }
 
-  // --- 2. TOAST NOTIFICATION SYSTEM ---
+  // Events View Renderer
+  function renderEventsView() {
+    const grid = document.getElementById('eventsListGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    KinetraDB.events.forEach(evt => {
+      const card = document.createElement('div');
+      card.className = 'event-schedule-card';
+      card.innerHTML = `
+        <div>
+          <div class="event-sport-badge">🏆 ${evt.sport}</div>
+          <h3 class="event-title" style="font-size: 1.3rem;">${evt.title}</h3>
+          <div class="event-meta" style="margin-top: 10px; margin-bottom: 16px;">
+            <div class="event-meta-item">📅 <span>${evt.date}</span></div>
+            <div class="event-meta-item">📍 <span>${evt.location}</span></div>
+            <div class="event-meta-item">👥 <span>${evt.players}</span></div>
+          </div>
+        </div>
+        <button class="btn btn-primary event-join-btn ${evt.joined ? 'btn-accent' : ''}" data-evt-id="${evt.id}">
+          ${evt.joined ? '✓ RSVP Confirmed' : 'Join Event Now'}
+        </button>
+      `;
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('.event-join-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-evt-id');
+        const targetEvt = KinetraDB.events.find(e => e.id === id);
+        if (targetEvt) {
+          targetEvt.joined = !targetEvt.joined;
+          if (targetEvt.joined) {
+            btn.textContent = '✓ RSVP Confirmed';
+            btn.classList.add('btn-accent');
+            showToast(`RSVP Confirmed for ${targetEvt.title}!`);
+            if (currentUser) {
+              currentUser.matchesCount = (currentUser.matchesCount || 12) + 1;
+              KinetraDB.updateUser(currentUser);
+            }
+          } else {
+            btn.textContent = 'Join Event Now';
+            btn.classList.remove('btn-accent');
+            showToast(`RSVP Cancelled for ${targetEvt.title}`);
+            if (currentUser) {
+              currentUser.matchesCount = Math.max(0, (currentUser.matchesCount || 12) - 1);
+              KinetraDB.updateUser(currentUser);
+            }
+          }
+        }
+      });
+    });
+  }
+
+  // Profile View Renderer
+  function renderProfileView() {
+    if (!currentUser) {
+      showToast('Please log in or sign up to view your profile.');
+      openLoginModal();
+      return;
+    }
+
+    const nameEl = document.getElementById('profileUserName');
+    const roleEl = document.getElementById('profileUserRole');
+    const sportEl = document.getElementById('profileUserSport');
+    const skillEl = document.getElementById('profileUserSkill');
+    const ageEl = document.getElementById('profileUserAge');
+    const emailEl = document.getElementById('profileUserEmail');
+    const matchesEl = document.getElementById('profileActiveMatchesCount');
+    const friendsEl = document.getElementById('profileFriendsCount');
+
+    if (nameEl) nameEl.textContent = currentUser.name;
+    if (roleEl) roleEl.textContent = `⚡ ${currentUser.role || 'Pro Athlete'}`;
+    if (sportEl) sportEl.textContent = `Primary Sport: ${currentUser.primarySport || 'Football'}`;
+    if (skillEl) skillEl.textContent = `Skill Level: ${currentUser.skillLevel || 'Advanced'}`;
+    if (ageEl) ageEl.textContent = `Age: ${currentUser.age || 24} (${currentUser.gender || 'Male'})`;
+    if (emailEl) emailEl.textContent = currentUser.email;
+    if (matchesEl) matchesEl.textContent = currentUser.matchesCount || 12;
+    if (friendsEl) friendsEl.textContent = currentUser.friendsCount || 48;
+  }
+
+  // ==========================================================================
+  // 4. PROFILE ACTION BUTTONS (Check Status, Add Game, Add Friends, Logout)
+  // ==========================================================================
+  const btnProfileCheckStatus = document.getElementById('btnProfileCheckStatus');
+  const btnProfileAddGame = document.getElementById('btnProfileAddGame');
+  const btnProfileAddFriends = document.getElementById('btnProfileAddFriends');
+  const btnProfileLogout = document.getElementById('btnProfileLogout');
+
+  // Modal Backdrops
+  const statusModal = document.getElementById('statusModal');
+  const addGameModal = document.getElementById('addGameModal');
+  const addFriendsModal = document.getElementById('addFriendsModal');
+  const closeStatusModal = document.getElementById('closeStatusModal');
+  const closeAddGameModal = document.getElementById('closeAddGameModal');
+  const closeAddFriendsModal = document.getElementById('closeAddFriendsModal');
+
+  // ACTION 1: Check Status
+  if (btnProfileCheckStatus) {
+    btnProfileCheckStatus.addEventListener('click', () => {
+      if (statusModal) statusModal.classList.add('open');
+    });
+  }
+
+  if (closeStatusModal) {
+    closeStatusModal.addEventListener('click', () => {
+      if (statusModal) statusModal.classList.remove('open');
+    });
+  }
+
+  // ACTION 2: Add Another Game
+  if (btnProfileAddGame) {
+    btnProfileAddGame.addEventListener('click', () => {
+      if (addGameModal) addGameModal.classList.add('open');
+    });
+  }
+
+  if (closeAddGameModal) {
+    closeAddGameModal.addEventListener('click', () => {
+      if (addGameModal) addGameModal.classList.remove('open');
+    });
+  }
+
+  const addGameForm = document.getElementById('addGameForm');
+  if (addGameForm) {
+    addGameForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newSport = document.getElementById('newSportSelect').value;
+      const newSkill = document.getElementById('newSportSkill').value;
+
+      if (currentUser) {
+        currentUser.primarySport = `${currentUser.primarySport}, ${newSport}`;
+        KinetraDB.updateUser(currentUser);
+        localStorage.setItem('kinetra_current_user', JSON.stringify(currentUser));
+        renderProfileView();
+        showToast(`Added ${newSport} to your profile!`);
+      }
+
+      if (addGameModal) addGameModal.classList.remove('open');
+    });
+  }
+
+  // ACTION 3: Add Friends
+  if (btnProfileAddFriends) {
+    btnProfileAddFriends.addEventListener('click', () => {
+      renderAddFriendsModalList();
+      if (addFriendsModal) addFriendsModal.classList.add('open');
+    });
+  }
+
+  if (closeAddFriendsModal) {
+    closeAddFriendsModal.addEventListener('click', () => {
+      if (addFriendsModal) addFriendsModal.classList.remove('open');
+    });
+  }
+
+  function renderAddFriendsModalList() {
+    const container = document.getElementById('suggestedFriendsList');
+    if (!container) return;
+
+    container.innerHTML = '';
+    KinetraDB.athletes.forEach(ath => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 12px;';
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="${ath.avatar}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--primary-purple);">
+          <div>
+            <h5 style="font-size: 0.95rem; color: #FFF;">${ath.name}</h5>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">${ath.sport} • ${ath.city}</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary connect-modal-btn ${ath.connected ? 'btn-accent' : ''}" data-ath-id="${ath.id}" style="padding: 6px 14px; font-size: 0.8rem;">
+          ${ath.connected ? '✓ Connected' : '+ Add Friend'}
+        </button>
+      `;
+      container.appendChild(row);
+    });
+
+    container.querySelectorAll('.connect-modal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-ath-id');
+        const targetAth = KinetraDB.athletes.find(a => a.id === id);
+        if (targetAth) {
+          targetAth.connected = !targetAth.connected;
+          if (targetAth.connected) {
+            btn.textContent = '✓ Connected';
+            btn.classList.add('btn-accent');
+            showToast(`Added ${targetAth.name} as friend!`);
+            if (currentUser) {
+              currentUser.friendsCount = (currentUser.friendsCount || 48) + 1;
+              KinetraDB.updateUser(currentUser);
+              renderProfileView();
+            }
+          } else {
+            btn.textContent = '+ Add Friend';
+            btn.classList.remove('btn-accent');
+            showToast(`Removed ${targetAth.name}`);
+            if (currentUser) {
+              currentUser.friendsCount = Math.max(0, (currentUser.friendsCount || 48) - 1);
+              KinetraDB.updateUser(currentUser);
+              renderProfileView();
+            }
+          }
+        }
+      });
+    });
+  }
+
+  // ACTION 4: Log Out
+  if (btnProfileLogout) {
+    btnProfileLogout.addEventListener('click', () => {
+      logout();
+    });
+  }
+
+  // ==========================================================================
+  // 5. AUTHENTICATION CONTROLLER (SIGNUP & LOGIN MODALS)
+  // ==========================================================================
+  const onboardingModal = document.getElementById('onboardingModal');
+  const loginModal = document.getElementById('loginModal');
+  const closeOnboardingModal = document.getElementById('closeOnboardingModal');
+  const closeLoginModal = document.getElementById('closeLoginModal');
+  const onboardingForm = document.getElementById('onboardingForm');
+  const loginForm = document.getElementById('loginForm');
+
+  function openSignupModal() {
+    if (onboardingModal) onboardingModal.classList.add('open');
+  }
+
+  function closeSignupModal() {
+    if (onboardingModal) onboardingModal.classList.remove('open');
+  }
+
+  function openLoginModal() {
+    if (loginModal) loginModal.classList.add('open');
+  }
+
+  function closeLoginModal() {
+    if (loginModal) loginModal.classList.remove('open');
+  }
+
+  if (closeOnboardingModal) closeOnboardingModal.addEventListener('click', closeSignupModal);
+  if (closeLoginModal) closeLoginModal.addEventListener('click', closeLoginModal);
+
+  // Handle Signup
+  if (onboardingForm) {
+    onboardingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const sport = document.getElementById('signupSport').value;
+      const skill = document.getElementById('signupSkill').value;
+      const age = document.getElementById('signupAge').value;
+      const gender = document.getElementById('signupGender').value;
+
+      // Active Role
+      let role = 'Athlete';
+      const activeRoleBtn = onboardingForm.querySelector('.role-option.active');
+      if (activeRoleBtn) role = activeRoleBtn.getAttribute('data-role');
+
+      // Validation
+      if (KinetraDB.getUserByEmail(email)) {
+        showToast('An account with this email already exists. Please log in.');
+        closeSignupModal();
+        openLoginModal();
+        return;
+      }
+
+      // Create User Object & JWT Token
+      const token = 'kinetra_jwt_token_' + Math.random().toString(36).substr(2);
+      const newUser = {
+        id: 'usr_' + Date.now(),
+        name,
+        email,
+        password, // stored locally in mock DB
+        role,
+        primarySport: sport,
+        skillLevel: skill,
+        age: parseInt(age, 10),
+        gender,
+        friendsCount: 1,
+        matchesCount: 2,
+        avatar: 'assets/arjun.png'
+      };
+
+      KinetraDB.saveUser(newUser);
+      saveAuthSession(newUser, token);
+
+      closeSignupModal();
+      showToast(`Welcome to Kinetra, ${name}! Redirecting to profile...`);
+      navigateTo('profile');
+    });
+  }
+
+  // Handle Login
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      const user = KinetraDB.getUserByEmail(email);
+      if (!user || user.password !== password) {
+        showToast('Invalid email or password. Please try again.');
+        return;
+      }
+
+      const token = 'kinetra_jwt_token_' + Math.random().toString(36).substr(2);
+      saveAuthSession(user, token);
+
+      closeLoginModal();
+      showToast(`Welcome back, ${user.name}!`);
+      navigateTo('profile');
+    });
+  }
+
+  // Role Option Selector inside Signup Form
+  const roleOptions = document.querySelectorAll('.role-option');
+  roleOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      roleOptions.forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+    });
+  });
+
+  // Close modals backdrop clicks
+  window.addEventListener('click', (e) => {
+    if (e.target === onboardingModal) closeSignupModal();
+    if (e.target === loginModal) closeLoginModal();
+    if (e.target === statusModal) statusModal.classList.remove('open');
+    if (e.target === addGameModal) addGameModal.classList.remove('open');
+    if (e.target === addFriendsModal) addFriendsModal.classList.remove('open');
+    if (e.target === videoModal) videoModal.classList.remove('open');
+    if (e.target === dietModal) closeDietModal();
+  });
+
+  // --- 6. TOAST NOTIFICATION SYSTEM ---
   const toastEl = document.getElementById('toastNotification');
   const toastMsgText = document.getElementById('toastMsgText');
   let toastTimer = null;
@@ -50,7 +634,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3500);
   }
 
-  // Bind toast triggers
   document.querySelectorAll('.toast-trigger').forEach(el => {
     el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -59,7 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Download App Store & Google Play links
   document.querySelectorAll('.download-trigger').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -68,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- 3. ANIMATED COUNTERS ---
+  // --- 7. ANIMATED COUNTERS ---
   const statNumbers = document.querySelectorAll('.stat-number');
   let animatedStats = false;
 
@@ -111,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
     observer.observe(statsBar);
   }
 
-  // --- 4. SPORTS TICKER PILLS INTERACTIVITY ---
+  // --- 8. SPORTS TICKER PILLS INTERACTIVITY ---
   const sportsPills = document.querySelectorAll('.sport-pill');
   sportsPills.forEach(pill => {
     pill.addEventListener('click', () => {
@@ -126,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- 5. "WHY KINETRA?" FEATURES ACCORDION & PHONE MOCKUP ---
+  // --- 9. "WHY KINETRA?" FEATURES ACCORDION & PHONE MOCKUP ---
   const featureItems = document.querySelectorAll('.feature-item');
   const phoneRsvpBtn = document.getElementById('phoneRsvpBtn');
 
@@ -136,17 +718,11 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.add('active');
       const featureKey = item.getAttribute('data-feature');
       
-      if (featureKey === 'discovery') {
-        showToast('Smart Discovery: AI matching active');
-      } else if (featureKey === 'play') {
-        showToast('Play Anytime: Venues synced');
-      } else if (featureKey === 'verified') {
-        showToast('Verified Community: Player badges active');
-      } else if (featureKey === 'track') {
-        showToast('Track & Improve: Performance logs updated');
-      } else if (featureKey === 'allone') {
-        showToast('All Sports One Home: Multi-sport profile active');
-      }
+      if (featureKey === 'discovery') showToast('Smart Discovery: AI matching active');
+      else if (featureKey === 'play') showToast('Play Anytime: Venues synced');
+      else if (featureKey === 'verified') showToast('Verified Community: Player badges active');
+      else if (featureKey === 'track') showToast('Track & Improve: Performance logs updated');
+      else if (featureKey === 'allone') showToast('All Sports One Home: Multi-sport profile active');
     });
   });
 
@@ -166,17 +742,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- 6. TRUSTED BY THOUSANDS - HTML5 CANVAS GRAPH ---
+  // --- 10. TRUSTED BY THOUSANDS - HTML5 CANVAS GRAPH ---
   const canvas = document.getElementById('growthCanvas');
   if (canvas) {
     const ctx = canvas.getContext('2d');
-    
     const dataPoints = [
-      { month: 'Jan', val: 15, label: '15,000 Downloads' },
-      { month: 'Feb', val: 32, label: '32,000 Downloads' },
-      { month: 'Mar', val: 58, label: '58,000 Downloads' },
-      { month: 'Apr', val: 82, label: '82,000 Downloads' },
-      { month: 'May', val: 105, label: '100,000+ Downloads' }
+      { month: 'Jan', val: 15 },
+      { month: 'Feb', val: 32 },
+      { month: 'Mar', val: 58 },
+      { month: 'Apr', val: 82 },
+      { month: 'May', val: 105 }
     ];
 
     function resizeCanvas() {
@@ -205,10 +780,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const x = paddingLeft + (i / (dataPoints.length - 1)) * graphWidth;
         const currentVal = dp.val * progress;
         const y = height - paddingBottom - (currentVal / maxVal) * graphHeight;
-        return { x, y, month: dp.month, label: dp.label };
+        return { x, y, month: dp.month };
       });
 
-      // Grid Lines
+      // Grid
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
@@ -233,11 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineTo(pt.x, pt.y);
           } else {
             const prev = points[idx - 1];
-            const cpX1 = prev.x + (pt.x - prev.x) / 2;
-            const cpY1 = prev.y;
-            const cpX2 = prev.x + (pt.x - prev.x) / 2;
-            const cpY2 = pt.y;
-            ctx.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, pt.x, pt.y);
+            ctx.bezierCurveTo(prev.x + (pt.x - prev.x) / 2, prev.y, prev.x + (pt.x - prev.x) / 2, pt.y, pt.x, pt.y);
           }
         });
         ctx.lineTo(points[points.length - 1].x, height - paddingBottom);
@@ -253,15 +824,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.beginPath();
         points.forEach((pt, idx) => {
-          if (idx === 0) {
-            ctx.moveTo(pt.x, pt.y);
-          } else {
+          if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          else {
             const prev = points[idx - 1];
-            const cpX1 = prev.x + (pt.x - prev.x) / 2;
-            const cpY1 = prev.y;
-            const cpX2 = prev.x + (pt.x - prev.x) / 2;
-            const cpY2 = pt.y;
-            ctx.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, pt.x, pt.y);
+            ctx.bezierCurveTo(prev.x + (pt.x - prev.x) / 2, prev.y, prev.x + (pt.x - prev.x) / 2, pt.y, pt.x, pt.y);
           }
         });
         ctx.strokeStyle = lineGradient;
@@ -273,14 +839,6 @@ document.addEventListener('DOMContentLoaded', () => {
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
           ctx.fillStyle = '#06B6D4';
-          ctx.shadowColor = '#06B6D4';
-          ctx.shadowBlur = 12;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
-          ctx.fillStyle = '#FFFFFF';
           ctx.fill();
 
           ctx.fillStyle = '#94A3B8';
@@ -303,9 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!start) start = timestamp;
         const progress = Math.min((timestamp - start) / 1500, 1);
         drawChart(progress);
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        }
+        if (progress < 1) requestAnimationFrame(step);
       }
       requestAnimationFrame(step);
     }
@@ -323,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- 7. TESTIMONIALS CAROUSEL SLIDER ---
+  // --- 11. TESTIMONIALS SLIDER ---
   const sliderTrack = document.getElementById('sliderTrack');
   const prevSlideBtn = document.getElementById('prevSlideBtn');
   const nextSlideBtn = document.getElementById('nextSlideBtn');
@@ -359,16 +915,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function goToSlide(index) {
       currentSlide = (index + totalSlides) % totalSlides;
       updateSlider();
-      resetAutoSlide();
+      if (autoSlideInterval) { clearInterval(autoSlideInterval); startAutoSlide(); }
     }
 
-    function nextSlide() {
-      goToSlide(currentSlide + 1);
-    }
-
-    function prevSlide() {
-      goToSlide(currentSlide - 1);
-    }
+    function nextSlide() { goToSlide(currentSlide + 1); }
+    function prevSlide() { goToSlide(currentSlide - 1); }
 
     if (nextSlideBtn) nextSlideBtn.addEventListener('click', nextSlide);
     if (prevSlideBtn) prevSlideBtn.addEventListener('click', prevSlide);
@@ -376,74 +927,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function startAutoSlide() {
       autoSlideInterval = setInterval(nextSlide, 4500);
     }
-
-    function resetAutoSlide() {
-      if (autoSlideInterval) clearInterval(autoSlideInterval);
-      startAutoSlide();
-    }
-
     startAutoSlide();
   }
 
-  // --- 8. MODAL CONTROLS & ONBOARDING ---
-  const onboardingModal = document.getElementById('onboardingModal');
-  const navGetStartedBtn = document.getElementById('navGetStartedBtn');
-  const heroGetStartedBtn = document.getElementById('heroGetStartedBtn');
-  const closeOnboardingModal = document.getElementById('closeOnboardingModal');
-
-  function openOnboarding() {
-    if (onboardingModal) onboardingModal.classList.add('open');
-  }
-
-  function closeOnboarding() {
-    if (onboardingModal) onboardingModal.classList.remove('open');
-  }
-
-  if (navGetStartedBtn) navGetStartedBtn.addEventListener('click', openOnboarding);
-  if (heroGetStartedBtn) heroGetStartedBtn.addEventListener('click', openOnboarding);
-  if (closeOnboardingModal) closeOnboardingModal.addEventListener('click', closeOnboarding);
-
-  const roleOptions = document.querySelectorAll('.role-option');
-  roleOptions.forEach(opt => {
-    opt.addEventListener('click', () => {
-      roleOptions.forEach(o => o.classList.remove('active'));
-      opt.classList.add('active');
-    });
-  });
-
-  const onboardingForm = document.getElementById('onboardingForm');
-  if (onboardingForm) {
-    onboardingForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      closeOnboarding();
-      showToast('Welcome to Kinetra! Account created successfully.');
-    });
-  }
-
-  // Video Modal
-  const videoModal = document.getElementById('videoModal');
-  const heroWatchVideoBtn = document.getElementById('heroWatchVideoBtn');
-  const closeVideoModal = document.getElementById('closeVideoModal');
-
-  if (heroWatchVideoBtn && videoModal) {
-    heroWatchVideoBtn.addEventListener('click', () => {
-      videoModal.classList.add('open');
-    });
-  }
-
-  if (closeVideoModal && videoModal) {
-    closeVideoModal.addEventListener('click', () => {
-      videoModal.classList.remove('open');
-    });
-  }
-
-  window.addEventListener('click', (e) => {
-    if (e.target === onboardingModal) closeOnboarding();
-    if (e.target === videoModal) videoModal.classList.remove('open');
-    if (e.target === dietModal) closeDietModal();
-  });
-
-  // --- 9. KINETRA AI ASSISTANT CHATBOX ENGINE ---
+  // --- 12. KINETRA AI ASSISTANT CHATBOT ENGINE ---
   const aiFloatingTrigger = document.getElementById('aiFloatingTrigger');
   const aiChatDrawer = document.getElementById('aiChatDrawer');
   const closeAiDrawer = document.getElementById('closeAiDrawer');
@@ -453,25 +940,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const modeGeneralTab = document.getElementById('modeGeneralTab');
   const modeDietTab = document.getElementById('modeDietTab');
 
-  function openAiChat() {
-    if (aiChatDrawer) aiChatDrawer.classList.add('open');
-  }
-
-  function closeAiChat() {
-    if (aiChatDrawer) aiChatDrawer.classList.remove('open');
-  }
+  function openAiChat() { if (aiChatDrawer) aiChatDrawer.classList.add('open'); }
+  function closeAiChat() { if (aiChatDrawer) aiChatDrawer.classList.remove('open'); }
 
   if (aiFloatingTrigger) aiFloatingTrigger.addEventListener('click', openAiChat);
   if (closeAiDrawer) closeAiDrawer.addEventListener('click', closeAiChat);
 
-  // Mode Switchers
   if (modeGeneralTab && modeDietTab) {
     modeGeneralTab.addEventListener('click', () => {
       modeGeneralTab.classList.add('active');
       modeDietTab.classList.remove('active');
-      appendAiBubble("Switched to General AI mode. Ask me anything about sports, matches, teams, or coaching!");
+      appendAiBubble("Switched to General AI mode. Ask me anything about sports!");
     });
-
     modeDietTab.addEventListener('click', () => {
       modeDietTab.classList.add('active');
       modeGeneralTab.classList.remove('active');
@@ -479,16 +959,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Quick Chips
   const chipBtns = document.querySelectorAll('.chip-btn');
   chipBtns.forEach(chip => {
     chip.addEventListener('click', () => {
       const q = chip.getAttribute('data-query');
-      if (q === 'Get My Diet Plan') {
-        openDietModal();
-      } else {
-        handleUserQuery(q);
-      }
+      if (q === 'Get My Diet Plan') openDietModal();
+      else handleUserQuery(q);
     });
   });
 
@@ -506,30 +982,21 @@ document.addEventListener('DOMContentLoaded', () => {
     appendUserBubble(userText);
     openAiChat();
 
-    // Intent-based AI responses
     setTimeout(() => {
       const lower = userText.toLowerCase();
       let response = "";
-
-      if (lower.includes('diet') || lower.includes('food') || lower.includes('meal') || lower.includes('nutrition') || lower.includes('protein')) {
-        response = "🥗 I can generate a customized daily sports diet plan tailored to your sport, goal, and dietary preference! Click 'Get My Diet Plan' below to create yours.";
+      if (lower.includes('diet') || lower.includes('food') || lower.includes('meal')) {
+        response = "🥗 I can generate a customized daily sports diet plan! Opening the Nutrition Generator...";
         appendAiBubble(response);
-        setTimeout(() => openDietModal(), 1200);
+        setTimeout(() => openDietModal(), 1000);
         return;
-      } else if (lower.includes('match') || lower.includes('pickup') || lower.includes('game')) {
-        response = "⚽ Kinetra Smart Discovery matches you with verified players and pickup games near you. Go to the Discover section or click on the smartphone mockup event to reserve your spot!";
-      } else if (lower.includes('coach') || lower.includes('academy') || lower.includes('train')) {
-        response = "🎓 Kinetra connects athletes directly with top certified coaches across 120+ sports. You can book 1-on-1 coaching or join specialized sports academies.";
-      } else if (lower.includes('team') || lower.includes('recruit') || lower.includes('roster')) {
-        response = "🏆 Team managers can recruit verified players, track skill ratings, and host tournaments effortlessly using Kinetra Team Roster Manager.";
-      } else if (lower.includes('cricket')) {
-        response = "🏏 For Cricket players, Kinetra offers match scheduling, pitch venue bookings, and tailored carb-loading diet plans for all-day stamina.";
-      } else if (lower.includes('football')) {
-        response = "⚽ Football players can discover local 5-a-side or 11-a-side matches, track sprint metrics, and receive hydration & protein recovery meal plans!";
+      } else if (lower.includes('match') || lower.includes('pickup')) {
+        response = "⚽ Kinetra Smart Discovery connects you with pickup matches near you! Click 'Events' or 'Connect' in the top menu to view active matches.";
+      } else if (lower.includes('coach')) {
+        response = "🎓 Kinetra connects athletes directly with top certified coaches across 120+ sports.";
       } else {
-        response = `⚡ Kinetra is the ultimate sports networking platform uniting 25,000+ athletes across 120+ sports. How else can I assist you with your athletic journey?`;
+        response = `⚡ Kinetra is the ultimate sports networking platform. Navigate to Discover, Connect, or Events to start playing!`;
       }
-
       appendAiBubble(response);
     }, 600);
   }
@@ -550,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', () => {
     aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
   }
 
-  // --- 10. AI SPORTS DIET PLAN GENERATOR & NOTIFICATIONS ---
+  // --- 13. DIET PLAN GENERATOR ---
   const dietModal = document.getElementById('dietModal');
   const closeDietModalBtn = document.getElementById('closeDietModal');
   const navDietBtn = document.getElementById('navDietBtn');
@@ -562,19 +1029,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const notifyPermBtn = document.getElementById('notifyPermBtn');
   const testNotificationBtn = document.getElementById('testNotificationBtn');
 
-  function openDietModal() {
-    if (dietModal) dietModal.classList.add('open');
-  }
-
-  function closeDietModal() {
-    if (dietModal) dietModal.classList.remove('open');
-  }
+  function openDietModal() { if (dietModal) dietModal.classList.add('open'); }
+  function closeDietModal() { if (dietModal) dietModal.classList.remove('open'); }
 
   if (navDietBtn) navDietBtn.addEventListener('click', openDietModal);
   if (heroDietBtn) heroDietBtn.addEventListener('click', openDietModal);
   if (closeDietModalBtn) closeDietModalBtn.addEventListener('click', closeDietModal);
 
-  // Diet Plan Generation Logic
   if (dietForm) {
     dietForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -583,146 +1044,69 @@ document.addEventListener('DOMContentLoaded', () => {
       const age = document.getElementById('dietAge').value;
       const gender = document.getElementById('dietGender').value;
       const restriction = document.getElementById('dietRestriction').value;
-
       generateDietPlan(sport, goal, age, gender, restriction);
     });
   }
 
   function generateDietPlan(sport, goal, age, gender, restriction) {
     const plans = {
-      "Breakfast": {
-        time: "08:00 AM",
-        title: restriction === "Vegan" ? "Chia & Oat Protein Smoothie Bowl" : (restriction === "Vegetarian" ? "Paneer/Tofu Scramble & Avocado Toast" : "Egg White Omelette & Whole Grain Toast"),
-        desc: `High nutrient breakfast to prime your metabolism for ${sport} training.`,
-        protein: restriction === "Keto" ? "28g Protein" : "32g Protein",
-        carbs: restriction === "Keto" ? "8g Carbs" : "55g Complex Carbs",
-        hydration: "💧 500ml Electrolyte Water"
-      },
-      "Lunch": {
-        time: "01:00 PM",
-        title: restriction === "Vegan" ? "Quinoa & Black Bean Buddha Bowl" : (restriction === "Vegetarian" ? "Lentil Dal, Brown Rice & Grilled Paneer" : "Grilled Chicken Breast with Sweet Potato & Broccoli"),
-        desc: `Sustained macro fuel designed for ${goal.toLowerCase()} and quick muscle recovery.`,
-        protein: "42g High Quality Protein",
-        carbs: restriction === "Keto" ? "12g Carbs" : "65g Complex Carbs",
-        hydration: "💧 750ml Hydration & BCAA"
-      },
-      "Snacks": {
-        time: "05:00 PM",
-        title: restriction === "Keto" ? "Almonds, Walnut & Pumpkin Seeds Mix" : "Greek Yogurt / Plant Protein Shake with Banana & Almonds",
-        desc: `Pre-workout energy booster tailored for high-intensity ${sport} sessions.`,
-        protein: "22g Protein",
-        carbs: "30g Fast Carbs",
-        hydration: "💧 400ml Coconut Water"
-      },
-      "Dinner": {
-        time: "08:30 PM",
-        title: restriction === "Vegan" ? "Tofu & Chickpea Stir-fry with Steamed Veggies" : (restriction === "Vegetarian" ? "Cottage Cheese & Spinach Curry with Millets" : "Baked Salmon / Lean Fish with Asparagus & Quinoa"),
-        desc: "Overnight muscle repair meal rich in essential omega-3s and zinc.",
-        protein: "38g Protein",
-        carbs: restriction === "Keto" ? "10g Carbs" : "40g Slow Carbs",
-        hydration: "💧 500ml Magnesium Hydration"
-      }
+      "Breakfast": { time: "08:00 AM", title: "Oats, Fruit Smoothie & Avocado Toast", protein: "30g Protein", carbs: "55g Carbs", hydration: "💧 500ml Water" },
+      "Lunch": { time: "01:00 PM", title: "Grilled Lean Protein, Brown Rice & Broccoli", protein: "42g Protein", carbs: "65g Carbs", hydration: "💧 750ml BCAA Hydration" },
+      "Snacks": { time: "05:00 PM", title: "Greek Yogurt / Almond & Banana Mix", protein: "20g Protein", carbs: "30g Carbs", hydration: "💧 400ml Coconut Water" },
+      "Dinner": { time: "08:30 PM", title: "Baked Fish/Tofu with Asparagus & Quinoa", protein: "38g Protein", carbs: "35g Carbs", hydration: "💧 500ml Magnesium Hydration" }
     };
 
-    // Save to LocalStorage
-    const dietData = { sport, goal, age, gender, restriction, plans };
-    localStorage.setItem('kinetra_user_diet', JSON.stringify(dietData));
-
-    // Render Cards
     if (mealCardsGrid) {
       mealCardsGrid.innerHTML = '';
-
-      const icons = { Breakfast: "🥣", Lunch: "🥗", Snacks: "🥑", Dinner: "🍲" };
-
-      Object.keys(plans).forEach(mealKey => {
-        const meal = plans[mealKey];
+      Object.keys(plans).forEach(mKey => {
+        const m = plans[mKey];
         const card = document.createElement('div');
         card.className = 'meal-card';
         card.innerHTML = `
-          <div class="meal-header">
-            <div class="meal-type-title">
-              <span>${icons[mealKey]}</span> ${mealKey}
-            </div>
-            <span class="meal-time-badge">⏰ ${meal.time}</span>
-          </div>
-          <h4 class="meal-name">${meal.title}</h4>
-          <p class="meal-desc">${meal.desc}</p>
+          <div class="meal-header"><div class="meal-type-title">${mKey}</div><span class="meal-time-badge">⏰ ${m.time}</span></div>
+          <h4 class="meal-name">${m.title}</h4>
           <div class="macro-tags">
-            <span class="macro-tag macro-protein">💪 ${meal.protein}</span>
-            <span class="macro-tag macro-carbs">⚡ ${meal.carbs}</span>
-            <span class="macro-tag macro-hydration">${meal.hydration}</span>
+            <span class="macro-tag macro-protein">💪 ${m.protein}</span>
+            <span class="macro-tag macro-carbs">⚡ ${m.carbs}</span>
+            <span class="macro-tag macro-hydration">${m.hydration}</span>
           </div>
         `;
         mealCardsGrid.appendChild(card);
       });
-
-      if (dietPlanHeadline) {
-        dietPlanHeadline.textContent = `Daily Diet Plan for ${sport} (${restriction})`;
-      }
-
-      if (dietResultsContainer) {
-        dietResultsContainer.style.display = 'block';
-      }
+      if (dietPlanHeadline) dietPlanHeadline.textContent = `Daily Diet Plan for ${sport} (${restriction})`;
+      if (dietResultsContainer) dietResultsContainer.style.display = 'block';
     }
-
     showToast(`Personalized ${sport} Diet Plan generated!`);
   }
 
-  // Web Notification Reminders Engine
   if (notifyPermBtn) {
     notifyPermBtn.addEventListener('click', () => {
-      if (!("Notification" in window)) {
-        showToast("Web Notifications are not supported in this browser.");
-        return;
+      if ("Notification" in window) {
+        Notification.requestPermission().then(p => {
+          if (p === 'granted') showToast("🔔 Meal Reminders enabled!");
+        });
       }
-
-      Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-          showToast("🔔 Meal Reminders enabled! You will receive daily meal alerts.");
-          notifyPermBtn.textContent = "✓ Reminders Active";
-          notifyPermBtn.style.borderColor = "#10B981";
-        } else {
-          showToast("Notification permission denied. In-app alerts will be used.");
-        }
-      });
     });
   }
 
   if (testNotificationBtn) {
     testNotificationBtn.addEventListener('click', () => {
-      const msg = "🥗 Kinetra Diet Alert: Time for Breakfast! Oats & Berry Protein Smoothie at 8:00 AM";
-      
+      const msg = "🥗 Kinetra Diet Alert: Time for Breakfast! Oats & Fruit Smoothie at 8:00 AM";
       if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Kinetra Sports Diet Reminder", {
-          body: msg,
-          icon: "assets/arjun.png"
-        });
+        new Notification("Kinetra Sports Diet Reminder", { body: msg });
       }
-
       showToast(msg);
     });
   }
 
-  // Check saved diet plan on load
-  const savedDiet = localStorage.getItem('kinetra_user_diet');
-  if (savedDiet) {
-    try {
-      const d = JSON.parse(savedDiet);
-      generateDietPlan(d.sport, d.goal, d.age, d.gender, d.restriction);
-    } catch(e) {}
-  }
+  // --- INITIALIZE SESSION ON LOAD ---
+  loadAuthSession();
 
-  // --- 11. NEWSLETTER FORM SUBMISSION ---
-  const newsletterForm = document.getElementById('newsletterForm');
-  if (newsletterForm) {
-    newsletterForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const emailInput = document.getElementById('newsletterEmail');
-      if (emailInput && emailInput.value) {
-        showToast(`Thank you for subscribing, ${emailInput.value}!`);
-        emailInput.value = '';
-      }
-    });
-  }
+  // Video Modal Triggers
+  const videoModal = document.getElementById('videoModal');
+  const heroWatchVideoBtn = document.getElementById('heroWatchVideoBtn');
+  const closeVideoModal = document.getElementById('closeVideoModal');
+  if (heroWatchVideoBtn && videoModal) heroWatchVideoBtn.addEventListener('click', () => videoModal.classList.add('open'));
+  if (closeVideoModal && videoModal) closeVideoModal.addEventListener('click', () => videoModal.classList.remove('open'));
 
 });
