@@ -6,7 +6,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_BASE_URL = window.KINETRA_API_URL || '/api';
+  const API_BASE = window.KINETRA_API_URL || '/api';
+  const API_BASE_URL = API_BASE;
 
   // ==========================================================================
   // 1. MULTILINGUAL TRANSLATION SYSTEM (PHASE 28)
