@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="KINETRA - National Sports Ecosystem & AI Networking Platform. Complete Hackathon MVP with Sports ID, QR Code, Kinetra Score, AI Matchmaking, Training Coach, Team Builder, and Live Match Center.">
+  <meta name="description" content="KINETRA - National Sports Ecosystem & AI Platform. Complete Hackathon MVP with Sports ID, QR Code, Kinetra Score, AI Matchmaking, Training Coach, Team Builder, and Live Match Center.">
   <title>Kinetra | National Sports Ecosystem & AI Platform</title>
 
   <!-- Google Fonts -->
@@ -42,6 +42,12 @@
       </nav>
 
       <div class="nav-actions">
+        <!-- In-App Notifications Bell -->
+        <button class="notif-bell-btn" id="notifBellBtn" title="In-App Notifications">
+          <span>🔔</span>
+          <div class="notif-badge-count" id="notifBadgeCount">3</div>
+        </button>
+
         <!-- Multilingual Support Selector -->
         <div class="language-selector-wrap">
           <span>🌐</span>
@@ -177,7 +183,7 @@
             <div class="persona-card">
               <div>
                 <div class="persona-icon-wrapper">
-                  <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                  <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 </div>
                 <h3 class="persona-title">For Teams</h3>
                 <p class="persona-desc">Recruit verified players, organize scrimmage matches, manage schedules, and host competitive tournaments effortless.</p>
@@ -402,7 +408,7 @@
     </div>
 
     <!-- ==========================================================================
-         VIEW 2: DISCOVER VIEW
+         VIEW 2: DISCOVER VIEW (WITH LIVE SEARCH & FILTERS)
          ========================================================================== -->
     <div class="view-page" id="discoverView">
       <div class="container">
@@ -411,6 +417,22 @@
           <h2 class="section-title">Discover Sports & Venues</h2>
           <p class="section-description">Browse active sports categories, check nearby court availability, and book venues.</p>
         </div>
+
+        <div class="search-filter-bar">
+          <input type="text" id="discoverSearchInput" placeholder="Search sports or venues..." class="search-input-field">
+          <select id="discoverSportFilter" class="filter-select">
+            <option value="All">All Categories</option>
+            <option value="Football">Football</option>
+            <option value="Cricket">Cricket</option>
+            <option value="Basketball">Basketball</option>
+          </select>
+          <select id="discoverSkillFilter" class="filter-select">
+            <option value="All">All Levels</option>
+            <option value="Open">Open Courts</option>
+          </select>
+          <button class="btn btn-primary" id="btnFilterDiscover" style="padding: 10px;">🔍 Search</button>
+        </div>
+
         <div class="view-grid-cards" id="discoverGrid"></div>
       </div>
     </div>
@@ -430,15 +452,24 @@
     </div>
 
     <!-- ==========================================================================
-         VIEW 4: EVENTS VIEW
+         VIEW 4: EVENTS VIEW (WITH MATCH CENTER TABS)
          ========================================================================== -->
     <div class="view-page" id="eventsView">
       <div class="container">
         <div class="section-header">
           <div class="section-tag">Live Sports Tournaments</div>
-          <h2 class="section-title">Upcoming Sports Events</h2>
+          <h2 class="section-title">Upcoming Sports Events & Match Center</h2>
           <p class="section-description">Join competitive tournaments, local league games, and weekend pickup matches near you.</p>
         </div>
+
+        <!-- Match Center Filter Tabs (Phases 6 & 7) -->
+        <div class="match-tabs-container">
+          <button class="match-tab-btn active" data-tab="all">All Events</button>
+          <button class="match-tab-btn" data-tab="live">🔴 Live Matches</button>
+          <button class="match-tab-btn" data-tab="upcoming">📅 Upcoming</button>
+          <button class="match-tab-btn" data-tab="completed">🏆 Completed</button>
+        </div>
+
         <div class="view-grid-cards" id="eventsListGrid"></div>
       </div>
     </div>
@@ -496,11 +527,53 @@
     </div>
 
     <!-- ==========================================================================
-         VIEW 7: PROFILE DASHBOARD VIEW (PHASES 7, 8, 9, 31)
+         VIEW 7: PROFILE DASHBOARD VIEW (PHASES 7, 8, 9, 31 & JOURNEY TIMELINE)
          ========================================================================== -->
     <div class="view-page" id="profileView">
       <div class="container">
         
+        <!-- Kinetra Sporting Journey Visual Timeline (Phase 2 Polish) -->
+        <div class="sporting-journey-card">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="section-tag" style="margin-bottom: 4px;">Milestones & Progression</div>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: #FFF;">YOUR SPORTING JOURNEY</h3>
+            </div>
+            <span class="detail-pill" style="background: rgba(16, 185, 129, 0.2); color: #34D399;">Active Milestone: Level 4</span>
+          </div>
+
+          <div class="journey-timeline-flex">
+            <div class="journey-node completed">
+              <div class="journey-node-icon">👤</div>
+              <span class="journey-node-label">Profile Created</span>
+            </div>
+            <div class="journey-node completed">
+              <div class="journey-node-icon">⚽</div>
+              <span class="journey-node-label">First Match</span>
+            </div>
+            <div class="journey-node completed">
+              <div class="journey-node-icon">🏆</div>
+              <span class="journey-node-label">First Win</span>
+            </div>
+            <div class="journey-node completed">
+              <div class="journey-node-icon">🔥</div>
+              <span class="journey-node-label">10 Matches</span>
+            </div>
+            <div class="journey-node">
+              <div class="journey-node-icon">⭐</div>
+              <span class="journey-node-label">Tournament</span>
+            </div>
+            <div class="journey-node">
+              <div class="journey-node-icon">🎖️</div>
+              <span class="journey-node-label">Achievements</span>
+            </div>
+            <div class="journey-node">
+              <div class="journey-node-icon">🚀</div>
+              <span class="journey-node-label">Get Discovered</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Digital Sports ID Card (Phase 8) -->
         <div class="digital-sports-id-card">
           <div class="sports-id-header">
@@ -543,10 +616,10 @@
         </div>
 
         <!-- Kinetra Score Meter Card (Phase 9) -->
-        <div class="kinetra-score-meter-card">
+        <div class="kinetra-score-meter-card" id="btnOpenScoreBreakdown">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div>
-              <div class="section-tag" style="margin-bottom: 4px;">KINETRA platform metric</div>
+              <div class="section-tag" style="margin-bottom: 4px;">Kinetra Platform Score metric (Click for breakdown)</div>
               <h3 style="font-size: 1.5rem; font-weight: 800; color: #FFF;">KINETRA ATHLETE SCORE</h3>
             </div>
             <div class="score-number-display" id="kinetraScoreVal">742 <span style="font-size: 1.5rem; color: var(--text-muted);">/ 1000</span></div>
@@ -560,14 +633,6 @@
             <div class="score-meter-bar-wrap">
               <div class="score-meter-label"><span>Consistency & Training (25%)</span><span>190 / 250</span></div>
               <div class="score-meter-bg"><div class="score-meter-fill" style="width: 76%;"></div></div>
-            </div>
-            <div class="score-meter-bar-wrap">
-              <div class="score-meter-label"><span>Growth Trend (20%)</span><span>160 / 200</span></div>
-              <div class="score-meter-bg"><div class="score-meter-fill" style="width: 80%;"></div></div>
-            </div>
-            <div class="score-meter-bar-wrap">
-              <div class="score-meter-label"><span>Teamwork & Sportsmanship (15%)</span><span>120 / 150</span></div>
-              <div class="score-meter-bg"><div class="score-meter-fill" style="width: 80%;"></div></div>
             </div>
           </div>
         </div>
@@ -667,6 +732,42 @@
 
   </main>
 
+  <!-- MODAL: KINETRA SCORE BREAKDOWN (PHASE 8 POLISH) -->
+  <div class="modal-backdrop" id="scoreBreakdownModal">
+    <div class="modal-card" style="max-width: 600px;">
+      <button class="modal-close-btn" id="closeScoreBreakdownModal">&times;</button>
+      <div class="section-tag" style="margin-bottom: 8px;">Metric Explanation</div>
+      <h3 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Kinetra Score Calculation</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">Transparent platform metric derived from match performance, consistency, teamwork, and verified achievements.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px; border: 1px solid var(--border-glass);">
+          <div style="display: flex; justify-content: space-between; font-weight: 700; color: #FFF; margin-bottom: 4px;">
+            <span>Performance Rating (30%)</span>
+            <span>225 / 300 pts</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Evaluates win rate, goals/runs scored, and match MVP awards.</p>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px; border: 1px solid var(--border-glass);">
+          <div style="display: flex; justify-content: space-between; font-weight: 700; color: #FFF; margin-bottom: 4px;">
+            <span>Consistency & Training (25%)</span>
+            <span>190 / 250 pts</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Measures weekly training drill completions and match attendance streak.</p>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px; border: 1px solid var(--border-glass);">
+          <div style="display: flex; justify-content: space-between; font-weight: 700; color: #FFF; margin-bottom: 4px;">
+            <span>Growth & Teamwork (35%)</span>
+            <span>280 / 350 pts</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Assesses sportsmanship ratings and multi-sport adaptability.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="footer">
     <div class="container">
@@ -677,11 +778,6 @@
             <span class="logo-text">KINETRA<span>.</span></span>
           </a>
           <p>ONE NETWORK. EVERY ATHLETE.<br>Connecting players, teams, and coaches across 120+ sports worldwide.</p>
-          <div class="social-icons">
-            <a href="#" class="social-icon" aria-label="Twitter/X"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-            <a href="#" class="social-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
-            <a href="#" class="social-icon" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></a>
-          </div>
         </div>
 
         <div>
@@ -721,7 +817,7 @@
     </div>
   </footer>
 
-  <!-- MODAL: AI TRAINING COACH (PHASE 12) -->
+  <!-- MODALS -->
   <div class="modal-backdrop" id="trainingCoachModal">
     <div class="modal-card" style="max-width: 650px;">
       <button class="modal-close-btn" id="closeTrainingCoachModal">&times;</button>
@@ -745,79 +841,30 @@
             <p style="font-size: 0.78rem; color: var(--text-muted);">Improves acceleration & footwork for match play.</p>
           </div>
         </label>
-
-        <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(26, 35, 58, 0.8); border: 1px solid var(--border-glass); border-radius: 12px; cursor: pointer;">
-          <input type="checkbox" class="drill-checkbox" checked style="width: 18px; height: 18px;">
-          <div>
-            <h5 style="font-size: 0.95rem; color: #FFF;">Ball Control & Precision Passing (30 mins)</h5>
-            <p style="font-size: 0.78rem; color: var(--text-muted);">Builds core technical consistency.</p>
-          </div>
-        </label>
-
-        <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(26, 35, 58, 0.8); border: 1px solid var(--border-glass); border-radius: 12px; cursor: pointer;">
-          <input type="checkbox" class="drill-checkbox" style="width: 18px; height: 18px;">
-          <div>
-            <h5 style="font-size: 0.95rem; color: #FFF;">Core Endurance & Recovery Mobility (15 mins)</h5>
-            <p style="font-size: 0.78rem; color: var(--text-muted);">Prevents injuries and optimizes stamina.</p>
-          </div>
-        </label>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: SMART TEAM BUILDER (PHASE 14) -->
   <div class="modal-backdrop" id="teamBuilderModal">
     <div class="modal-card" style="max-width: 650px;">
       <button class="modal-close-btn" id="closeTeamBuilderModal">&times;</button>
       <div class="section-tag" style="margin-bottom: 8px;">AI Squad Balancer</div>
       <h3 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Smart Team Builder</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">Balancing players by skill, position, and performance rating.</p>
-
       <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; margin-bottom: 20px;">
         <span style="font-size: 1.1rem; font-weight: 800; color: #34D399;" id="teamBalanceRating">TEAM BALANCE: 92%</span>
         <button class="btn btn-accent" id="btnRegenerateTeams" style="padding: 6px 14px; font-size: 0.8rem;">🔄 Regenerate Teams</button>
       </div>
-
-      <div class="squad-builder-grid">
-        <div class="squad-column-box">
-          <div class="squad-title"><span>🛡️ TEAM ALPHA</span><span style="font-size: 0.8rem; color: var(--text-muted);">Avg Rating: 4.8</span></div>
-          <div class="squad-player-list" id="squadAlphaList">
-            <div class="squad-player-item"><span>Arjun R. (Captain)</span><strong>Score: 780</strong></div>
-            <div class="squad-player-item"><span>Sneha P.</span><strong>Score: 740</strong></div>
-            <div class="squad-player-item"><span>Alex K.</span><strong>Score: 710</strong></div>
-          </div>
-        </div>
-
-        <div class="squad-column-box">
-          <div class="squad-title"><span>⚡ TEAM BETA</span><span style="font-size: 0.8rem; color: var(--text-muted);">Avg Rating: 4.7</span></div>
-          <div class="squad-player-list" id="squadBetaList">
-            <div class="squad-player-item"><span>Rohit M. (Coach)</span><strong>Score: 790</strong></div>
-            <div class="squad-player-item"><span>Maya S.</span><strong>Score: 730</strong></div>
-            <div class="squad-player-item"><span>David L.</span><strong>Score: 700</strong></div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- AUTHENTICATION SIGNUP & LOGIN MODALS -->
   <div class="modal-backdrop" id="onboardingModal">
     <div class="modal-card">
       <button class="modal-close-btn" id="closeOnboardingModal">&times;</button>
       <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;">Create Your Kinetra Profile</h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Join 25,000+ athletes and teams across 120+ sports worldwide.</p>
-
       <form id="onboardingForm" style="display: flex; flex-direction: column; gap: 14px;">
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-          <button type="button" class="btn btn-secondary role-option active" data-role="Athlete" style="padding: 10px; font-size: 0.82rem;">Athlete</button>
-          <button type="button" class="btn btn-secondary role-option" data-role="Team Organiser" style="padding: 10px; font-size: 0.82rem;">Team</button>
-          <button type="button" class="btn btn-secondary role-option" data-role="Coach" style="padding: 10px; font-size: 0.82rem;">Coach</button>
-        </div>
-
         <input type="text" id="signupName" placeholder="Full Name" required style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 12px; color: #FFF; font-family: inherit;">
         <input type="email" id="signupEmail" placeholder="Email Address" required style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 12px; color: #FFF; font-family: inherit;">
         <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" required minlength="6" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 12px; color: #FFF; font-family: inherit;">
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <select id="signupSport" class="diet-select">
             <option value="Football">Football ⚽</option>
@@ -825,14 +872,12 @@
             <option value="Basketball">Basketball 🏀</option>
             <option value="Badminton">Badminton 🏸</option>
           </select>
-
           <select id="signupSkill" class="diet-select">
             <option value="Intermediate">Intermediate</option>
             <option value="Advanced">Advanced Pro</option>
             <option value="Beginner">Beginner</option>
           </select>
         </div>
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <input type="number" id="signupAge" placeholder="Age" value="24" min="10" max="80" required style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 12px; color: #FFF; font-family: inherit;">
           <select id="signupGender" class="diet-select">
@@ -841,7 +886,6 @@
             <option value="Other">Other</option>
           </select>
         </div>
-
         <button type="submit" class="btn btn-primary" style="margin-top: 8px; width: 100%;">Create Account & Enter Profile</button>
       </form>
     </div>
@@ -851,31 +895,21 @@
     <div class="modal-card">
       <button class="modal-close-btn" id="closeLoginModal">&times;</button>
       <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;">Log In to Kinetra</h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Access your profile, connected teams, and upcoming matches.</p>
-
       <form id="loginForm" style="display: flex; flex-direction: column; gap: 14px;">
         <input type="email" id="loginEmail" placeholder="Email Address" required style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 12px; color: #FFF; font-family: inherit;">
         <input type="password" id="loginPassword" placeholder="Password" required style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 12px; color: #FFF; font-family: inherit;">
-
         <button type="submit" class="btn btn-primary" style="margin-top: 8px; width: 100%;">Log In</button>
       </form>
     </div>
   </div>
 
-  <!-- PROFILE ACTION MODALS -->
   <div class="modal-backdrop" id="statusModal">
     <div class="modal-card">
       <button class="modal-close-btn" id="closeStatusModal">&times;</button>
       <div class="section-tag" style="margin-bottom: 8px;">Live Activity</div>
       <h3 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 14px;">Current Player Status</h3>
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        <div style="padding: 14px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: #34D399; font-weight: 700;">
-          🟢 Active Status: Ready for Matches
-        </div>
-        <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 12px; padding: 14px;">
-          <h5 style="font-size: 0.95rem; color: #FFF; margin-bottom: 4px;">Next Scheduled Event</h5>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">City Football Cup • Sun 21 May at 5:00 PM (Central Park, NY)</p>
-        </div>
+      <div style="padding: 14px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: #34D399; font-weight: 700;">
+        🟢 Active Status: Ready for Matches
       </div>
     </div>
   </div>
@@ -902,74 +936,6 @@
       <h3 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 8px;">Discover & Add Athlete Friends</h3>
       <div style="display: flex; flex-direction: column; gap: 12px;" id="suggestedFriendsList"></div>
     </div>
-  </div>
-
-  <!-- DIET PLAN MODAL -->
-  <div class="modal-backdrop" id="dietModal">
-    <div class="modal-card" style="max-width: 650px;">
-      <button class="modal-close-btn" id="closeDietModal">&times;</button>
-      <div class="section-tag" style="margin-bottom: 8px;">AI Nutrition Generator</div>
-      <h3 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Your Personalized Sports Diet Plan</h3>
-
-      <form id="dietForm" class="diet-form-container">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-          <select class="diet-select" id="dietSport">
-            <option value="Cricket">Cricket 🏏</option>
-            <option value="Football">Football ⚽</option>
-            <option value="Basketball">Basketball 🏀</option>
-          </select>
-          <select class="diet-select" id="dietGoal">
-            <option value="Endurance & Stamina">Endurance & Stamina</option>
-            <option value="Muscle Gain & Strength">Muscle Gain & Strength</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 8px;">⚡ Generate My Diet Plan</button>
-      </form>
-
-      <div id="dietResultsContainer" style="display: none; margin-top: 24px;">
-        <div class="meal-cards-grid" id="mealCardsGrid"></div>
-        <button class="btn btn-accent" id="testNotificationBtn" style="margin-top: 16px; width: 100%;">🔔 Send Test Meal Reminder Alert</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- WATCH VIDEO MODAL -->
-  <div class="modal-backdrop" id="videoModal">
-    <div class="modal-card" style="max-width: 720px; padding: 24px;">
-      <button class="modal-close-btn" id="closeVideoModal">&times;</button>
-      <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 16px;">Kinetra Platform Showcase</h3>
-      <div style="position: relative; padding-top: 56.25%; background: #000; border-radius: 16px; overflow: hidden;">
-        <iframe id="promoIframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0" title="Kinetra Demo" allowfullscreen></iframe>
-      </div>
-    </div>
-  </div>
-
-  <!-- KINETRA AI ASSISTANT CHATBOX -->
-  <button class="ai-floating-trigger" id="aiFloatingTrigger">
-    <div class="ai-trigger-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
-    <span>Kinetra AI</span>
-  </button>
-
-  <div class="ai-chat-drawer" id="aiChatDrawer">
-    <div class="ai-chat-header">
-      <div class="ai-chat-header-top">
-        <div class="ai-chat-title-group"><div class="ai-status-dot"></div><span class="ai-chat-title">Kinetra AI Assistant</span></div>
-        <button class="modal-close-btn" id="closeAiDrawer" style="position: static; width: 28px; height: 28px;">&times;</button>
-      </div>
-      <div class="ai-mode-tabs">
-        <button class="mode-tab active" id="modeGeneralTab">⚡ General AI</button>
-        <button class="mode-tab" id="modeDietTab">🥗 Diet Plan Mode</button>
-      </div>
-    </div>
-
-    <div class="ai-chat-messages" id="aiChatMessages">
-      <div class="chat-bubble ai">👋 Hi! I'm your Kinetra AI Assistant. Ask me anything about matches, teams, coaching, or diet plans!</div>
-    </div>
-
-    <form class="ai-chat-input-wrap" id="aiChatForm">
-      <input type="text" placeholder="Type your sports question..." class="ai-chat-input" id="aiChatInput" required>
-      <button type="submit" class="ai-send-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
-    </form>
   </div>
 
   <!-- TOAST NOTIFICATION -->

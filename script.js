@@ -1,6 +1,7 @@
 /* ==========================================================================
    KINETRA - MASTER FULL-STACK FRONTEND ENGINE
    Connected to Node.js / Python Express REST API Backend (http://localhost:5000)
+   Hackathon Polish Edition
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -80,10 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ],
 
     events: [
-      { id: 'evt-1', title: 'City Football Cup', sport: 'Football', date: 'Sun 21 May, 5:00 PM', location: 'Central Park, New York', players: '18/22 Attending', joined: false },
-      { id: 'evt-2', title: 'Brooklyn Tennis Open', sport: 'Tennis', date: 'Sat 27 May, 10:00 AM', location: 'Brooklyn Courts, NY', players: '12/16 Attending', joined: false },
-      { id: 'evt-3', title: 'Manhattan Hoops League', sport: 'Basketball', date: 'Wed 31 May, 6:30 PM', location: 'Downtown Gym, NY', players: '8/10 Attending', joined: false },
-      { id: 'evt-4', title: 'Metropolitan Badminton Championship', sport: 'Badminton', date: 'Sun 4 Jun, 9:00 AM', location: 'Metro Sports Arena', players: '24/32 Attending', joined: false }
+      { id: 'evt-1', title: 'City Football Cup', sport: 'Football', status: 'live', date: 'Sun 21 May, 5:00 PM', location: 'Central Park, New York', players: '18/22 Attending', joined: false },
+      { id: 'evt-2', title: 'Brooklyn Tennis Open', sport: 'Tennis', status: 'upcoming', date: 'Sat 27 May, 10:00 AM', location: 'Brooklyn Courts, NY', players: '12/16 Attending', joined: false },
+      { id: 'evt-3', title: 'Manhattan Hoops League', sport: 'Basketball', status: 'upcoming', date: 'Wed 31 May, 6:30 PM', location: 'Downtown Gym, NY', players: '8/10 Attending', joined: false },
+      { id: 'evt-4', title: 'Metropolitan Badminton Championship', sport: 'Badminton', status: 'completed', date: 'Sun 4 Jun, 9:00 AM', location: 'Metro Sports Arena', players: '24/32 Attending', joined: true }
     ],
 
     sportsCategories: [
@@ -288,13 +289,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 5. VIEW RENDERERS & MATCHMAKING
+  // 5. VIEW RENDERERS & LIVE SEARCH/FILTERS
   // ==========================================================================
-  function renderDiscoverView() {
+  function renderDiscoverView(filterText = '') {
     const grid = document.getElementById('discoverGrid');
     if (!grid) return;
     grid.innerHTML = '';
-    KinetraDB.sportsCategories.forEach(cat => {
+    
+    const filtered = KinetraDB.sportsCategories.filter(cat => 
+      cat.name.toLowerCase().includes(filterText.toLowerCase()) || 
+      cat.desc.toLowerCase().includes(filterText.toLowerCase())
+    );
+
+    filtered.forEach(cat => {
       const card = document.createElement('div');
       card.className = 'persona-card';
       card.innerHTML = `
@@ -309,6 +316,14 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       grid.appendChild(card);
+    });
+  }
+
+  // Discover Live Search Input Listener
+  const discoverSearchInput = document.getElementById('discoverSearchInput');
+  if (discoverSearchInput) {
+    discoverSearchInput.addEventListener('input', (e) => {
+      renderDiscoverView(e.target.value.trim());
     });
   }
 
@@ -366,16 +381,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Match Center Filter Tabs Handler
+  let currentMatchTab = 'all';
+  const matchTabBtns = document.querySelectorAll('.match-tab-btn');
+  matchTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      matchTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMatchTab = btn.getAttribute('data-tab');
+      renderEventsView();
+    });
+  });
+
   function renderEventsView() {
     const grid = document.getElementById('eventsListGrid');
     if (!grid) return;
     grid.innerHTML = '';
-    KinetraDB.events.forEach(evt => {
+
+    const filteredEvents = KinetraDB.events.filter(evt => {
+      if (currentMatchTab === 'all') return true;
+      return evt.status === currentMatchTab;
+    });
+
+    filteredEvents.forEach(evt => {
       const card = document.createElement('div');
       card.className = 'event-schedule-card';
+      const statusBadge = evt.status === 'live' ? '<span class="status-badge-live">🔴 LIVE MATCH</span>' : 
+                          evt.status === 'completed' ? '<span class="status-badge-joined">🏆 COMPLETED</span>' : '';
+
       card.innerHTML = `
         <div>
-          <div class="event-sport-badge">🏆 ${evt.sport}</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="event-sport-badge">🏆 ${evt.sport}</div>
+            ${statusBadge}
+          </div>
           <h3 class="event-title" style="font-size: 1.3rem;">${evt.title}</h3>
           <div class="event-meta" style="margin-top: 10px; margin-bottom: 16px;">
             <div class="event-meta-item">📅 <span>${evt.date}</span></div>
@@ -555,6 +594,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scoreValEl) scoreValEl.innerHTML = `${currentUser.kinetraScore || 742} <span style="font-size: 1.5rem; color: var(--text-muted);">/ 1000</span>`;
 
     renderSportsIdQrCode(sportsIdCode);
+  }
+
+  // --- KINETRA SCORE BREAKDOWN MODAL ---
+  const btnOpenScoreBreakdown = document.getElementById('btnOpenScoreBreakdown');
+  const scoreBreakdownModal = document.getElementById('scoreBreakdownModal');
+  const closeScoreBreakdownModal = document.getElementById('closeScoreBreakdownModal');
+
+  if (btnOpenScoreBreakdown && scoreBreakdownModal) {
+    btnOpenScoreBreakdown.addEventListener('click', () => scoreBreakdownModal.classList.add('open'));
+  }
+  if (closeScoreBreakdownModal && scoreBreakdownModal) {
+    closeScoreBreakdownModal.addEventListener('click', () => scoreBreakdownModal.classList.remove('open'));
+  }
+
+  // --- NOTIFICATIONS BELL CLICK ---
+  const notifBellBtn = document.getElementById('notifBellBtn');
+  if (notifBellBtn) {
+    notifBellBtn.addEventListener('click', () => {
+      showToast('🔔 Notifications: 3 new match connection requests received!');
+    });
   }
 
   // --- PROFILE BUTTONS ---
@@ -749,7 +808,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeOnboardingModal) closeOnboardingModal.addEventListener('click', closeSignupModal);
   if (closeLoginModal) closeLoginModal.addEventListener('click', closeLoginModal);
 
-  // REST API SIGNUP
   if (onboardingForm) {
     onboardingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -789,7 +847,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // REST API LOGIN
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -828,14 +885,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const roleOptions = document.querySelectorAll('.role-option');
-  roleOptions.forEach(opt => {
-    opt.addEventListener('click', () => {
-      roleOptions.forEach(o => o.classList.remove('active'));
-      opt.classList.add('active');
-    });
-  });
-
   window.addEventListener('click', (e) => {
     if (e.target === onboardingModal) closeSignupModal();
     if (e.target === loginModal) closeLoginModal();
@@ -844,6 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === addFriendsModal) addFriendsModal.classList.remove('open');
     if (e.target === trainingCoachModal) trainingCoachModal.classList.remove('open');
     if (e.target === teamBuilderModal) teamBuilderModal.classList.remove('open');
+    if (e.target === scoreBreakdownModal) scoreBreakdownModal.classList.remove('open');
     if (e.target === videoModal) videoModal.classList.remove('open');
     if (e.target === dietModal) closeDietModal();
   });
@@ -908,254 +958,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }, { threshold: 0.3 });
     observer.observe(statsBar);
-  }
-
-  // --- SPORTS TICKER PILLS ---
-  const sportsPills = document.querySelectorAll('.sport-pill');
-  sportsPills.forEach(pill => {
-    pill.addEventListener('click', () => {
-      sportsPills.forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      const sportName = pill.getAttribute('data-sport');
-      showToast(sportName === 'all' ? 'Showing events for All Sports' : `Filtered feed for ${sportName.toUpperCase()}`);
-    });
-  });
-
-  // --- WHY KINETRA ACCORDION ---
-  const featureItems = document.querySelectorAll('.feature-item');
-  featureItems.forEach(item => {
-    item.addEventListener('click', () => {
-      featureItems.forEach(f => f.classList.remove('active'));
-      item.classList.add('active');
-      showToast(`Feature: ${item.querySelector('h4').textContent}`);
-    });
-  });
-
-  // --- CANVAS GRAPH ---
-  const canvas = document.getElementById('growthCanvas');
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    const dataPoints = [{ month: 'Jan', val: 15 }, { month: 'Feb', val: 32 }, { month: 'Mar', val: 58 }, { month: 'Apr', val: 82 }, { month: 'May', val: 105 }];
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * window.devicePixelRatio;
-      canvas.height = rect.height * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    }
-
-    function drawChart(progress) {
-      const width = canvas.getBoundingClientRect().width;
-      const height = canvas.getBoundingClientRect().height;
-      ctx.clearRect(0, 0, width, height);
-
-      const paddingLeft = 50, paddingRight = 30, paddingTop = 30, paddingBottom = 40;
-      const graphWidth = width - paddingLeft - paddingRight;
-      const graphHeight = height - paddingTop - paddingBottom;
-      const maxVal = 120;
-
-      const points = dataPoints.map((dp, i) => {
-        const x = paddingLeft + (i / (dataPoints.length - 1)) * graphWidth;
-        const currentVal = dp.val * progress;
-        const y = height - paddingBottom - (currentVal / maxVal) * graphHeight;
-        return { x, y, month: dp.month };
-      });
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 4; i++) {
-        const yGrid = paddingTop + (i / 4) * graphHeight;
-        ctx.beginPath(); ctx.moveTo(paddingLeft, yGrid); ctx.lineTo(width - paddingRight, yGrid); ctx.stroke();
-      }
-
-      if (points.length > 0) {
-        const areaGradient = ctx.createLinearGradient(0, paddingTop, 0, height - paddingBottom);
-        areaGradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
-        areaGradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
-
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, height - paddingBottom);
-        points.forEach((pt, idx) => {
-          if (idx === 0) ctx.lineTo(pt.x, pt.y);
-          else {
-            const prev = points[idx - 1];
-            ctx.bezierCurveTo(prev.x + (pt.x - prev.x) / 2, prev.y, prev.x + (pt.x - prev.x) / 2, pt.y, pt.x, pt.y);
-          }
-        });
-        ctx.lineTo(points[points.length - 1].x, height - paddingBottom);
-        ctx.closePath();
-        ctx.fillStyle = areaGradient;
-        ctx.fill();
-
-        const lineGradient = ctx.createLinearGradient(paddingLeft, 0, width - paddingRight, 0);
-        lineGradient.addColorStop(0, '#8B5CF6'); lineGradient.addColorStop(1, '#06B6D4');
-
-        ctx.beginPath();
-        points.forEach((pt, idx) => {
-          if (idx === 0) ctx.moveTo(pt.x, pt.y);
-          else {
-            const prev = points[idx - 1];
-            ctx.bezierCurveTo(prev.x + (pt.x - prev.x) / 2, prev.y, prev.x + (pt.x - prev.x) / 2, pt.y, pt.x, pt.y);
-          }
-        });
-        ctx.strokeStyle = lineGradient;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        points.forEach(pt => {
-          ctx.beginPath(); ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2); ctx.fillStyle = '#06B6D4'; ctx.fill();
-          ctx.fillStyle = '#94A3B8'; ctx.font = '600 13px "Plus Jakarta Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(pt.month, pt.x, height - 12);
-        });
-      }
-    }
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    let graphAnimated = false;
-    const graphCard = document.getElementById('events');
-    if (graphCard) {
-      const graphObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && !graphAnimated) {
-            graphAnimated = true;
-            let start = null;
-            function step(t) {
-              if (!start) start = t;
-              const p = Math.min((t - start) / 1500, 1);
-              drawChart(p);
-              if (p < 1) requestAnimationFrame(step);
-            }
-            requestAnimationFrame(step);
-          }
-        });
-      }, { threshold: 0.2 });
-      graphObserver.observe(graphCard);
-    }
-  }
-
-  // --- TESTIMONIALS SLIDER ---
-  const sliderTrack = document.getElementById('sliderTrack');
-  const prevSlideBtn = document.getElementById('prevSlideBtn');
-  const nextSlideBtn = document.getElementById('nextSlideBtn');
-  const sliderDots = document.getElementById('sliderDots');
-  const slides = document.querySelectorAll('.slide');
-
-  if (sliderTrack && slides.length > 0) {
-    let currentSlide = 0;
-    const totalSlides = slides.length;
-    let autoSlideInterval = null;
-
-    if (sliderDots) {
-      sliderDots.innerHTML = '';
-      for (let i = 0; i < totalSlides; i++) {
-        const dot = document.createElement('div');
-        dot.classList.add('dot');
-        if (i === 0) dot.classList.add('active');
-        dot.addEventListener('click', () => goToSlide(i));
-        sliderDots.appendChild(dot);
-      }
-    }
-
-    function updateSlider() {
-      sliderTrack.style.transform = `translateX(-${currentSlide * 100}%)`;
-      if (sliderDots) {
-        const dots = sliderDots.querySelectorAll('.dot');
-        dots.forEach((d, idx) => d.classList.toggle('active', idx === currentSlide));
-      }
-    }
-
-    function goToSlide(index) {
-      currentSlide = (index + totalSlides) % totalSlides;
-      updateSlider();
-      if (autoSlideInterval) { clearInterval(autoSlideInterval); startAutoSlide(); }
-    }
-
-    function nextSlide() { goToSlide(currentSlide + 1); }
-    function prevSlide() { goToSlide(currentSlide - 1); }
-
-    if (nextSlideBtn) nextSlideBtn.addEventListener('click', nextSlide);
-    if (prevSlideBtn) prevSlideBtn.addEventListener('click', prevSlide);
-
-    function startAutoSlide() { autoSlideInterval = setInterval(nextSlide, 4500); }
-    startAutoSlide();
-  }
-
-  // --- KINETRA AI CHATBOT ---
-  const aiFloatingTrigger = document.getElementById('aiFloatingTrigger');
-  const aiChatDrawer = document.getElementById('aiChatDrawer');
-  const closeAiDrawer = document.getElementById('closeAiDrawer');
-  const aiChatMessages = document.getElementById('aiChatMessages');
-  const aiChatForm = document.getElementById('aiChatForm');
-  const aiChatInput = document.getElementById('aiChatInput');
-
-  function openAiChat() { if (aiChatDrawer) aiChatDrawer.classList.add('open'); }
-  function closeAiChat() { if (aiChatDrawer) aiChatDrawer.classList.remove('open'); }
-
-  if (aiFloatingTrigger) aiFloatingTrigger.addEventListener('click', openAiChat);
-  if (closeAiDrawer) closeAiDrawer.addEventListener('click', closeAiChat);
-
-  if (aiChatForm) {
-    aiChatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const q = aiChatInput.value.trim();
-      if (!q) return;
-      appendUserBubble(q);
-      aiChatInput.value = '';
-
-      setTimeout(() => {
-        appendAiBubble(`⚡ Kinetra AI: I found top matches for "${q}". Go to AI Matchmaking or Events to connect directly!`);
-      }, 600);
-    });
-  }
-
-  function appendUserBubble(text) {
-    const b = document.createElement('div'); b.className = 'chat-bubble user'; b.textContent = text;
-    aiChatMessages.appendChild(b); aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-  }
-
-  function appendAiBubble(text) {
-    const b = document.createElement('div'); b.className = 'chat-bubble ai'; b.textContent = text;
-    aiChatMessages.appendChild(b); aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-  }
-
-  // --- DIET MODAL ENGINE ---
-  const dietModal = document.getElementById('dietModal');
-  const closeDietModalBtn = document.getElementById('closeDietModal');
-  const navDietBtn = document.getElementById('navDietBtn');
-  const heroDietBtn = document.getElementById('heroDietBtn');
-  const dietForm = document.getElementById('dietForm');
-  const dietResultsContainer = document.getElementById('dietResultsContainer');
-  const mealCardsGrid = document.getElementById('mealCardsGrid');
-
-  function openDietModal() { if (dietModal) dietModal.classList.add('open'); }
-  function closeDietModal() { if (dietModal) dietModal.classList.remove('open'); }
-
-  if (navDietBtn) navDietBtn.addEventListener('click', openDietModal);
-  if (heroDietBtn) heroDietBtn.addEventListener('click', openDietModal);
-  if (closeDietModalBtn) closeDietModalBtn.addEventListener('click', closeDietModal);
-
-  if (dietForm) {
-    dietForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const sport = document.getElementById('dietSport').value;
-      if (mealCardsGrid) {
-        mealCardsGrid.innerHTML = `
-          <div class="meal-card">
-            <div class="meal-header"><div class="meal-type-title">🥣 Breakfast</div><span class="meal-time-badge">⏰ 08:00 AM</span></div>
-            <h4 class="meal-name">Oats, Berry Protein Smoothie & Avocado Toast</h4>
-            <div class="macro-tags"><span class="macro-tag macro-protein">💪 32g Protein</span><span class="macro-tag macro-carbs">⚡ 55g Carbs</span></div>
-          </div>
-          <div class="meal-card">
-            <div class="meal-header"><div class="meal-type-title">🥗 Lunch</div><span class="meal-time-badge">⏰ 01:00 PM</span></div>
-            <h4 class="meal-name">Grilled Lean Chicken Breast & Quinoa</h4>
-            <div class="macro-tags"><span class="macro-tag macro-protein">💪 44g Protein</span><span class="macro-tag macro-carbs">⚡ 65g Carbs</span></div>
-          </div>
-        `;
-        if (dietResultsContainer) dietResultsContainer.style.display = 'block';
-      }
-      showToast(`Personalized ${sport} Diet Plan generated!`);
-    });
   }
 
   // --- INITIALIZE SESSION ON LOAD ---
