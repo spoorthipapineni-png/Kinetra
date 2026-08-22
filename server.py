@@ -187,54 +187,92 @@ class KinetraApiHandler(BaseHTTPRequestHandler):
             "matchesCount": row[11]
         }
 
+    def _serve_static_file(self, req_path):
+        rel_path = req_path.lstrip('/')
+        if not rel_path or rel_path == 'index.html':
+            rel_path = 'index.html'
+
+        file_path = os.path.join(os.getcwd(), rel_path)
+        if not os.path.isfile(file_path):
+            file_path = os.path.join(os.getcwd(), 'index.html')
+
+        mime_types = {
+            '.html': 'text/html; charset=utf-8',
+            '.css': 'text/css; charset=utf-8',
+            '.js': 'application/javascript; charset=utf-8',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.svg': 'image/svg+xml',
+            '.json': 'application/json',
+            '.ico': 'image/x-icon'
+        }
+
+        ext = os.path.splitext(file_path)[1].lower()
+        content_type = mime_types.get(ext, 'application/octet-stream')
+
+        try:
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', str(len(content)))
+            self._set_cors_headers()
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            self._send_json({"error": f"File not found: {rel_path}"}, 404)
+
     # --- GET REQUESTS ---
     def do_GET(self):
         path = self.path.split('?')[0]
 
-        if path == '/api/health':
-            return self._send_json({
-                "success": True,
-                "service": "KINETRA REST API",
-                "status": "operational",
-                "version": "1.0.0"
-            })
+        if path.startswith('/api/'):
+            if path == '/api/health':
+                return self._send_json({
+                    "success": True,
+                    "service": "KINETRA REST API",
+                    "status": "operational",
+                    "version": "1.0.0"
+                })
 
-        elif path == '/api/profile':
-            user = self._get_auth_user()
-            if not user:
-                return self._send_json({"error": "Unauthorized / Invalid token"}, 401)
-            
-            # Fetch user games
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            cursor.execute('SELECT sport_name, skill_level FROM games WHERE user_id = ?', (user['id'],))
-            games = [{"sport": r[0], "skill": r[1]} for r in cursor.fetchall()]
-            conn.close()
+            elif path == '/api/profile':
+                user = self._get_auth_user()
+                if not user:
+                    return self._send_json({"error": "Unauthorized / Invalid token"}, 401)
+                
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                cursor.execute('SELECT sport_name, skill_level FROM games WHERE user_id = ?', (user['id'],))
+                games = [{"sport": r[0], "skill": r[1]} for r in cursor.fetchall()]
+                conn.close()
 
-            user['games'] = games
-            user['achievements'] = [
-                {"title": "City League MVP", "desc": "Top scorer in Football Cup"},
-                {"title": "10 Matches Streak", "desc": "Completed 10 consecutive matches"}
-            ]
-            return self._send_json({"success": True, "user": user})
+                user['games'] = games
+                user['achievements'] = [
+                    {"title": "City League MVP", "desc": "Top scorer in Football Cup"},
+                    {"title": "10 Matches Streak", "desc": "Completed 10 consecutive matches"}
+                ]
+                return self._send_json({"success": True, "user": user})
 
-        elif path == '/api/events':
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            cursor.execute('SELECT id, title, sport, date, location, players FROM events')
-            rows = cursor.fetchall()
-            conn.close()
-            events = [{"id": r[0], "title": r[1], "sport": r[2], "date": r[3], "location": r[4], "players": r[5]} for r in rows]
-            return self._send_json({"success": True, "events": events})
+            elif path == '/api/events':
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                cursor.execute('SELECT id, title, sport, date, location, players FROM events')
+                rows = cursor.fetchall()
+                conn.close()
+                events = [{"id": r[0], "title": r[1], "sport": r[2], "date": r[3], "location": r[4], "players": r[5]} for r in rows]
+                return self._send_json({"success": True, "events": events})
 
-        elif path == '/api/connections':
-            user = self._get_auth_user()
-            if not user:
-                return self._send_json({"error": "Unauthorized"}, 401)
-            return self._send_json({"success": True, "connections": []})
+            elif path == '/api/connections':
+                user = self._get_auth_user()
+                if not user:
+                    return self._send_json({"error": "Unauthorized"}, 401)
+                return self._send_json({"success": True, "connections": []})
 
+            else:
+                self._send_json({"error": "Endpoint not found"}, 404)
         else:
-            self._send_json({"error": "Endpoint not found"}, 404)
+            self._serve_static_file(path)
 
     # --- POST REQUESTS ---
     def do_POST(self):
